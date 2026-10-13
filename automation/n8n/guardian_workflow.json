@@ -1,0 +1,138 @@
+{
+  "name": "ScamShield Live - Guardian Circle Automation Workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "guardian-alert",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "id": "webhook-trigger",
+      "name": "Webhook: risk.alert (tier >= 2)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "number": [
+            {
+              "value1": "={{ $json.tier }}",
+              "operation": "equal",
+              "value2": 3
+            }
+          ]
+        }
+      },
+      "id": "tier-check",
+      "name": "IF Tier == 3 (Critical)",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "phoneNumber": "={{ $json.guardian_phone }}",
+        "text": "🚨 ScamShield Alert: High-risk outgoing transfer of PKR {{ $json.amount }} held for {{ $json.user_name }}. An OTP request was detected on an unknown call.\n\nApprove: {{ $json.approve_link }}\nBlock & Secure: {{ $json.block_link }}"
+      },
+      "id": "whatsapp-guardian-alert",
+      "name": "WhatsApp / SMS to Guardian",
+      "type": "n8n-nodes-base.whatsapp",
+      "typeVersion": 1,
+      "position": [700, 200]
+    },
+    {
+      "parameters": {
+        "amount": 90,
+        "unit": "seconds"
+      },
+      "id": "wait-for-guardian",
+      "name": "Wait for Response (90s Timeout)",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1,
+      "position": [920, 200]
+    },
+    {
+      "parameters": {
+        "requestMethod": "POST",
+        "url": "http://localhost:8000/bank/holds",
+        "jsonParameters": true,
+        "options": {},
+        "bodyParametersJson": "{\"hold_id\": \"{{ $json.hold_id }}\", \"status\": \"blocked\", \"reason\": \"Guardian approval timeout or blocked\"}"
+      },
+      "id": "bank-lock",
+      "name": "HTTP Request -> /bank/holds (Keep Lock)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 2,
+      "position": [1140, 200]
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "phoneNumber": "={{ $json.guardian_phone }}",
+        "text": "ℹ️ ScamShield Advisory: Your family member is on a call with unverified high pressure. No money has moved."
+      },
+      "id": "soft-alert-tier2",
+      "name": "Soft Notification to Guardian (Tier 2)",
+      "type": "n8n-nodes-base.whatsapp",
+      "typeVersion": 1,
+      "position": [700, 420]
+    }
+  ],
+  "connections": {
+    "Webhook: risk.alert (tier >= 2)": {
+      "main": [
+        [
+          {
+            "node": "IF Tier == 3 (Critical)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF Tier == 3 (Critical)": {
+      "main": [
+        [
+          {
+            "node": "WhatsApp / SMS to Guardian",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Soft Notification to Guardian (Tier 2)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WhatsApp / SMS to Guardian": {
+      "main": [
+        [
+          {
+            "node": "Wait for Response (90s Timeout)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait for Response (90s Timeout)": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request -> /bank/holds (Keep Lock)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

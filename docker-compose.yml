@@ -1,0 +1,107 @@
+# ==============================================================================
+# ScamShield - Production Multi-Container Orchestration (Docker Compose)
+# AI Builder Cup 2026 | Banking, Financial Services & Insurance Track
+# ==============================================================================
+
+name: scamshield
+
+services:
+  # ----------------------------------------------------------------------------
+  # 1. Frontend Service: React 19 + Vite PWA served via Nginx Reverse Proxy
+  # ----------------------------------------------------------------------------
+  scamshield-frontend:
+    container_name: scamshield-frontend
+    build:
+      context: ./apps/web
+      dockerfile: Dockerfile
+    ports:
+      - "5173:80"
+      - "3000:80"
+    depends_on:
+      - scamshield-backend
+    networks:
+      - scamshield-net
+    restart: unless-stopped
+
+  # ----------------------------------------------------------------------------
+  # 2. Backend Service: FastAPI + WebSockets + Gemini Analysis + Risk Fusion
+  # ----------------------------------------------------------------------------
+  scamshield-backend:
+    container_name: scamshield-backend
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      - HOST=0.0.0.0
+      - PORT=8000
+      - DATABASE_URL=postgresql://scamshield:scamshield_secure_pass@scamshield-db:5432/scamshield
+      - DEMO_MODE=true
+    depends_on:
+      scamshield-db:
+        condition: service_healthy
+    networks:
+      - scamshield-net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+
+  # ----------------------------------------------------------------------------
+  # 3. Automation Service: n8n Workflow Engine for Guardian WhatsApp/SMS Alerts
+  # ----------------------------------------------------------------------------
+  scamshield-n8n:
+    container_name: scamshield-n8n
+    image: docker.n8n.io/n8nio/n8n:latest
+    ports:
+      - "5678:5678"
+    environment:
+      - N8N_PORT=5678
+      - N8N_SECURE_COOKIE=false
+      - WEBHOOK_URL=http://localhost:5678/
+      - GENERIC_TIMEZONE=Asia/Karachi
+    volumes:
+      - n8n_storage:/home/node/.n8n
+      - ./automation/n8n:/backup/n8n
+    networks:
+      - scamshield-net
+    restart: unless-stopped
+
+  # ----------------------------------------------------------------------------
+  # 4. Database Service: PostgreSQL for Users, Accounts, Holds, & Interventions
+  # ----------------------------------------------------------------------------
+  scamshield-db:
+    container_name: scamshield-db
+    image: postgres:16-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_DB=scamshield
+      - POSTGRES_USER=scamshield
+      - POSTGRES_PASSWORD=scamshield_secure_pass
+    volumes:
+      - db_storage:/var/lib/postgresql/data
+      - ./infra/init_db.sql:/docker-entrypoint-initdb.d/init_db.sql:ro
+    networks:
+      - scamshield-net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U scamshield -d scamshield"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+networks:
+  scamshield-net:
+    driver: bridge
+
+volumes:
+  db_storage:
+    name: scamshield_db_data
+  n8n_storage:
+    name: scamshield_n8n_data

@@ -1,0 +1,33 @@
+# Dependencies
+node_modules/
+apps/web/node_modules/
+
+# Python cache & virtual environments
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+env/
+venv/
+.venv/
+ENV/
+
+# Production builds
+apps/web/dist/
+dist/
+build/
+
+# Environment Variables & Secrets (Keep .env.example tracked)
+.env
+*.env.local
+
+# Docker & Database local data
+db_data/
+n8n_data/
+*.db
+*.sqlite3
+
+# Logs & temp
+*.log
+.DS_Store
+Thumbs.db
