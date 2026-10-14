@@ -10,6 +10,7 @@ import {
   Users,
   FileText,
   Home,
+  BarChart3,
 } from 'lucide-react';
 
 export type ActiveTab =
@@ -20,7 +21,8 @@ export type ActiveTab =
   | 'scam-gym'
   | 'scam-radar'
   | 'guardians'
-  | 'evidence-pack';
+  | 'evidence-pack'
+  | 'evaluation';
 
 interface HeaderProps {
   activeTab: ActiveTab;
@@ -80,6 +82,7 @@ export const Header: React.FC<HeaderProps> = ({
     { id: 'scam-radar', label: 'Scam Radar', icon: <MapPin className="w-4 h-4" />, badge: 'F10/F11' },
     { id: 'guardians', label: 'Guardian Circle', icon: <Users className="w-4 h-4" />, badge: 'F6' },
     { id: 'evidence-pack', label: 'Evidence Pack', icon: <FileText className="w-4 h-4" />, badge: 'F13' },
+    { id: 'evaluation', label: 'Evaluation', icon: <BarChart3 className="w-4 h-4" />, badge: '§8' },
   ];
 
   return (

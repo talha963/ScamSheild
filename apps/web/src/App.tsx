@@ -8,6 +8,7 @@ import { ScamGym } from './components/ScamGym/ScamGym';
 import { ScamRadar } from './components/ScamRadar/ScamRadar';
 import { GuardianCircle } from './components/GuardianCircle/GuardianCircle';
 import { EvidencePack } from './components/EvidencePack/EvidencePack';
+import { EvaluationDashboard } from './components/Evaluation/EvaluationDashboard';
 import { RiskEvent } from './types';
 import { DEMO_SCENARIOS } from './mockData/scenarios';
 import { PlayCircle, Shield, Award } from 'lucide-react';
@@ -126,6 +127,8 @@ export function App() {
         {activeTab === 'evidence-pack' && (
           <EvidencePack riskEvent={currentRiskEvent} />
         )}
+
+        {activeTab === 'evaluation' && <EvaluationDashboard />}
       </main>
 
       {/* Cyber Defense Footer */}

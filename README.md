@@ -137,10 +137,11 @@ ScamShield Live is packaged into **4 independent microservices**:
 ## 🚀 Quickstart Guide (Run in 60 Seconds)
 
 ### Option 1: One-Command Docker Launch (Recommended)
-Clone the repository and launch the full stack:
+With Docker Desktop running, launch the full stack from the project root:
 ```bash
-docker compose up -d
+docker compose up --build -d
 ```
+The demo runs without API keys using its built-in fallback behavior. To enable Gemini or Pinecone, copy `.env.example` to `.env` and add your API keys before starting the stack.
 Open your browser:
 - 🌐 **Web PWA Dashboard**: [http://localhost:5173](http://localhost:5173) (or [http://localhost:3000](http://localhost:3000))
 - ⚡ **Backend API & Swagger Docs**: [http://localhost:8000/docs](http://localhost:8000/docs)
@@ -179,17 +180,23 @@ npm run dev
 
 ---
 
-## 📊 Benchmark Verification (Section 8.2)
+## 📊 Benchmark Verification (Section 8)
 
-Run automated benchmark evaluation anytime:
+Every metric is **measured** from a reproducible run, never hard-coded:
 ```bash
-python ml/notebooks/evaluation_metrics.py
+python ml/evaluation/run_evaluation.py          # or: python ml/notebooks/evaluation_metrics.py
+pytest tests/ -q                                # unit tests for metrics, pipeline and fusion rules
 ```
-- **Recall at Fixed FAR**: **92.9%** *(Target: $\ge$ 90% at 2% FAR)* $\rightarrow$ **[PASS]**
-- **Median Time-to-Detect**: **10.8s** *(Target: $<$ 15.0s)* $\rightarrow$ **[PASS]**
-- **False Alarms per 100 Calls**: **1.8** *(Target: $<$ 3.0)* $\rightarrow$ **[PASS]**
-- **Intervention Latency**: **2.4s** *(Target: $<$ 3.0s)* $\rightarrow$ **[PASS]**
-- **Dialect Parity**: Urdu Script, Roman Urdu, Punjabi, and English perform within **2.5%** variance.
+Results are written to `reports/evaluation_report.md` / `.json` / `per_call_results.csv` and are also shown live in the
+**Evaluation** tab of the web app (run the benchmark, speak-and-evaluate a sentence, record user-comprehension testers).
+
+Covered: recall at fixed false-alarm rate, time-to-detect, false alarms per 100 genuine calls, intervention latency,
+per-language fairness (Urdu, Roman Urdu, Punjabi, English, code-switched), scam-type / requested-action / per-tactic accuracy,
+calibration, fusion design rules, prompt-injection robustness, Voice-Clone Shield and Scam Lens evaluation, and the
+8-of-10 user-comprehension study. See [`ml/evaluation/README.md`](ml/evaluation/README.md) for the full mapping to the PDF.
+
+> Without `GEMINI_API_KEY` the built-in keyword fallback is what gets evaluated, and the report says so. Add a key to `.env`
+> and re-run to measure Gemini. The corpus is synthetic-plus-curated, so treat results as a regression baseline, not real-world accuracy.
 
 ---
 

@@ -1,0 +1,722 @@
+[
+  {
+    "file": "scam_000.png",
+    "label": "scam",
+    "brand": "HBL",
+    "tampered": true
+  },
+  {
+    "file": "scam_001.png",
+    "label": "scam",
+    "brand": "JazzCash",
+    "tampered": false
+  },
+  {
+    "file": "scam_002.png",
+    "label": "scam",
+    "brand": "Easypaisa",
+    "tampered": false
+  },
+  {
+    "file": "scam_003.png",
+    "label": "scam",
+    "brand": "Meezan",
+    "tampered": true
+  },
+  {
+    "file": "scam_004.png",
+    "label": "scam",
+    "brand": "BISP",
+    "tampered": false
+  },
+  {
+    "file": "scam_005.png",
+    "label": "scam",
+    "brand": "PTA",
+    "tampered": false
+  },
+  {
+    "file": "scam_006.png",
+    "label": "scam",
+    "brand": "HBL",
+    "tampered": true
+  },
+  {
+    "file": "scam_007.png",
+    "label": "scam",
+    "brand": "JazzCash",
+    "tampered": false
+  },
+  {
+    "file": "scam_008.png",
+    "label": "scam",
+    "brand": "Easypaisa",
+    "tampered": false
+  },
+  {
+    "file": "scam_009.png",
+    "label": "scam",
+    "brand": "Meezan",
+    "tampered": true
+  },
+  {
+    "file": "scam_010.png",
+    "label": "scam",
+    "brand": "BISP",
+    "tampered": false
+  },
+  {
+    "file": "scam_011.png",
+    "label": "scam",
+    "brand": "PTA",
+    "tampered": false
+  },
+  {
+    "file": "scam_012.png",
+    "label": "scam",
+    "brand": "HBL",
+    "tampered": true
+  },
+  {
+    "file": "scam_013.png",
+    "label": "scam",
+    "brand": "JazzCash",
+    "tampered": false
+  },
+  {
+    "file": "scam_014.png",
+    "label": "scam",
+    "brand": "Easypaisa",
+    "tampered": false
+  },
+  {
+    "file": "scam_015.png",
+    "label": "scam",
+    "brand": "Meezan",
+    "tampered": true
+  },
+  {
+    "file": "scam_016.png",
+    "label": "scam",
+    "brand": "BISP",
+    "tampered": false
+  },
+  {
+    "file": "scam_017.png",
+    "label": "scam",
+    "brand": "PTA",
+    "tampered": false
+  },
+  {
+    "file": "scam_018.png",
+    "label": "scam",
+    "brand": "HBL",
+    "tampered": true
+  },
+  {
+    "file": "scam_019.png",
+    "label": "scam",
+    "brand": "JazzCash",
+    "tampered": false
+  },
+  {
+    "file": "scam_020.png",
+    "label": "scam",
+    "brand": "Easypaisa",
+    "tampered": false
+  },
+  {
+    "file": "scam_021.png",
+    "label": "scam",
+    "brand": "Meezan",
+    "tampered": true
+  },
+  {
+    "file": "scam_022.png",
+    "label": "scam",
+    "brand": "BISP",
+    "tampered": false
+  },
+  {
+    "file": "scam_023.png",
+    "label": "scam",
+    "brand": "PTA",
+    "tampered": false
+  },
+  {
+    "file": "scam_024.png",
+    "label": "scam",
+    "brand": "HBL",
+    "tampered": true
+  },
+  {
+    "file": "scam_025.png",
+    "label": "scam",
+    "brand": "JazzCash",
+    "tampered": false
+  },
+  {
+    "file": "scam_026.png",
+    "label": "scam",
+    "brand": "Easypaisa",
+    "tampered": false
+  },
+  {
+    "file": "scam_027.png",
+    "label": "scam",
+    "brand": "Meezan",
+    "tampered": true
+  },
+  {
+    "file": "scam_028.png",
+    "label": "scam",
+    "brand": "BISP",
+    "tampered": false
+  },
+  {
+    "file": "scam_029.png",
+    "label": "scam",
+    "brand": "PTA",
+    "tampered": false
+  },
+  {
+    "file": "scam_030.png",
+    "label": "scam",
+    "brand": "HBL",
+    "tampered": true
+  },
+  {
+    "file": "scam_031.png",
+    "label": "scam",
+    "brand": "JazzCash",
+    "tampered": false
+  },
+  {
+    "file": "scam_032.png",
+    "label": "scam",
+    "brand": "Easypaisa",
+    "tampered": false
+  },
+  {
+    "file": "scam_033.png",
+    "label": "scam",
+    "brand": "Meezan",
+    "tampered": true
+  },
+  {
+    "file": "scam_034.png",
+    "label": "scam",
+    "brand": "BISP",
+    "tampered": false
+  },
+  {
+    "file": "scam_035.png",
+    "label": "scam",
+    "brand": "PTA",
+    "tampered": false
+  },
+  {
+    "file": "scam_036.png",
+    "label": "scam",
+    "brand": "HBL",
+    "tampered": true
+  },
+  {
+    "file": "scam_037.png",
+    "label": "scam",
+    "brand": "JazzCash",
+    "tampered": false
+  },
+  {
+    "file": "scam_038.png",
+    "label": "scam",
+    "brand": "Easypaisa",
+    "tampered": false
+  },
+  {
+    "file": "scam_039.png",
+    "label": "scam",
+    "brand": "Meezan",
+    "tampered": true
+  },
+  {
+    "file": "scam_040.png",
+    "label": "scam",
+    "brand": "BISP",
+    "tampered": false
+  },
+  {
+    "file": "scam_041.png",
+    "label": "scam",
+    "brand": "PTA",
+    "tampered": false
+  },
+  {
+    "file": "scam_042.png",
+    "label": "scam",
+    "brand": "HBL",
+    "tampered": true
+  },
+  {
+    "file": "scam_043.png",
+    "label": "scam",
+    "brand": "JazzCash",
+    "tampered": false
+  },
+  {
+    "file": "scam_044.png",
+    "label": "scam",
+    "brand": "Easypaisa",
+    "tampered": false
+  },
+  {
+    "file": "scam_045.png",
+    "label": "scam",
+    "brand": "Meezan",
+    "tampered": true
+  },
+  {
+    "file": "scam_046.png",
+    "label": "scam",
+    "brand": "BISP",
+    "tampered": false
+  },
+  {
+    "file": "scam_047.png",
+    "label": "scam",
+    "brand": "PTA",
+    "tampered": false
+  },
+  {
+    "file": "scam_048.png",
+    "label": "scam",
+    "brand": "HBL",
+    "tampered": true
+  },
+  {
+    "file": "scam_049.png",
+    "label": "scam",
+    "brand": "JazzCash",
+    "tampered": false
+  },
+  {
+    "file": "scam_050.png",
+    "label": "scam",
+    "brand": "Easypaisa",
+    "tampered": false
+  },
+  {
+    "file": "scam_051.png",
+    "label": "scam",
+    "brand": "Meezan",
+    "tampered": true
+  },
+  {
+    "file": "scam_052.png",
+    "label": "scam",
+    "brand": "BISP",
+    "tampered": false
+  },
+  {
+    "file": "scam_053.png",
+    "label": "scam",
+    "brand": "PTA",
+    "tampered": false
+  },
+  {
+    "file": "scam_054.png",
+    "label": "scam",
+    "brand": "HBL",
+    "tampered": true
+  },
+  {
+    "file": "scam_055.png",
+    "label": "scam",
+    "brand": "JazzCash",
+    "tampered": false
+  },
+  {
+    "file": "scam_056.png",
+    "label": "scam",
+    "brand": "Easypaisa",
+    "tampered": false
+  },
+  {
+    "file": "scam_057.png",
+    "label": "scam",
+    "brand": "Meezan",
+    "tampered": true
+  },
+  {
+    "file": "scam_058.png",
+    "label": "scam",
+    "brand": "BISP",
+    "tampered": false
+  },
+  {
+    "file": "scam_059.png",
+    "label": "scam",
+    "brand": "PTA",
+    "tampered": false
+  },
+  {
+    "file": "genuine_000.png",
+    "label": "genuine",
+    "brand": null,
+    "tampered": false
+  },
+  {
+    "file": "genuine_001.png",
+    "label": "genuine",
+    "brand": null,
+    "tampered": false
+  },
+  {
+    "file": "genuine_002.png",
+    "label": "genuine",
+    "brand": null,
+    "tampered": false
+  },
+  {
+    "file": "genuine_003.png",
+    "label": "genuine",
+    "brand": null,
+    "tampered": false
+  },
+  {
+    "file": "genuine_004.png",
+    "label": "genuine",
+    "brand": null,
+    "tampered": false
+  },
+  {
+    "file": "genuine_005.png",
+    "label": "genuine",
+    "brand": null,
+    "tampered": false
+  },
+  {
+    "file": "genuine_006.png",
+    "label": "genuine",
+    "brand": null,
+    "tampered": false
+  },
+  {
+    "file": "genuine_007.png",
+    "label": "genuine",
+    "brand": null,
+    "tampered": false
+  },
+  {
+    "file": "genuine_008.png",
+    "label": "genuine",
+    "brand": null,
+    "tampered": false
+  },
+  {
+    "file": "genuine_009.png",
+    "label": "genuine",
+    "brand": null,
+    "tampered": false
+  },
+  {
+    "file": "genuine_010.png",
+    "label": "genuine",
+    "brand": null,
+    "tampered": false
+  },
+  {
+    "file": "genuine_011.png",
+    "label": "genuine",
+    "brand": null,
+    "tampered": false
+  },
+  {
+    "file": "genuine_012.png",
+    "label": "genuine",
+    "brand": null,
+    "tampered": false
+  },
+  {
+    "file": "genuine_013.png",
+    "label": "genuine",
+    "brand": null,
+    "tampered": false
+  },
+  {
+    "file": "genuine_014.png",
+    "label": "genuine",
+    "brand": null,
+    "tampered": false
+  },
+  {
+    "file": "genuine_015.png",
+    "label": "genuine",
+    "brand": null,
+    "tampered": false
+  },
+  {
+    "file": "genuine_016.png",
+    "label": "genuine",
+    "brand": null,
+    "tampered": false
+  },
+  {
+    "file": "genuine_017.png",
+    "label": "genuine",
+    "brand": null,
+    "tampered": false
+  },
+  {
+    "file": "genuine_018.png",
+    "label": "genuine",
+    "brand": null,
+    "tampered": false
+  },
+  {
+    "file": "genuine_019.png",
+    "label": "genuine",
+    "brand": null,
+    "tampered": false
+  },
+  {
+    "file": "genuine_020.png",
+    "label": "genuine",
+    "brand": null,
+    "tampered": false
+  },
+  {
+    "file": "genuine_021.png",
+    "label": "genuine",
+    "brand": null,
+    "tampered": false
+  },
+  {
+    "file": "genuine_022.png",
+    "label": "genuine",
+    "brand": null,
+    "tampered": false
+  },
+  {
+    "file": "genuine_023.png",
+    "label": "genuine",
+    "brand": null,
+    "tampered": false
+  },
+  {
+    "file": "genuine_024.png",
+    "label": "genuine",
+    "brand": null,
+    "tampered": false
+  },
+  {
+    "file": "genuine_025.png",
+    "label": "genuine",
+    "brand": null,
+    "tampered": false
+  },
+  {
+    "file": "genuine_026.png",
+    "label": "genuine",
+    "brand": null,
+    "tampered": false
+  },
+  {
+    "file": "genuine_027.png",
+    "label": "genuine",
+    "brand": null,
+    "tampered": false
+  },
+  {
+    "file": "genuine_028.png",
+    "label": "genuine",
+    "brand": null,
+    "tampered": false
+  },
+  {
+    "file": "genuine_029.png",
+    "label": "genuine",
+    "brand": null,
+    "tampered": false
+  },
+  {
+    "file": "genuine_030.png",
+    "label": "genuine",
+    "brand": null,
+    "tampered": false
+  },
+  {
+    "file": "genuine_031.png",
+    "label": "genuine",
+    "brand": null,
+    "tampered": false
+  },
+  {
+    "file": "genuine_032.png",
+    "label": "genuine",
+    "brand": null,
+    "tampered": false
+  },
+  {
+    "file": "genuine_033.png",
+    "label": "genuine",
+    "brand": null,
+    "tampered": false
+  },
+  {
+    "file": "genuine_034.png",
+    "label": "genuine",
+    "brand": null,
+    "tampered": false
+  },
+  {
+    "file": "genuine_035.png",
+    "label": "genuine",
+    "brand": null,
+    "tampered": false
+  },
+  {
+    "file": "genuine_036.png",
+    "label": "genuine",
+    "brand": null,
+    "tampered": false
+  },
+  {
+    "file": "genuine_037.png",
+    "label": "genuine",
+    "brand": null,
+    "tampered": false
+  },
+  {
+    "file": "genuine_038.png",
+    "label": "genuine",
+    "brand": null,
+    "tampered": false
+  },
+  {
+    "file": "genuine_039.png",
+    "label": "genuine",
+    "brand": null,
+    "tampered": false
+  },
+  {
+    "file": "genuine_040.png",
+    "label": "genuine",
+    "brand": null,
+    "tampered": false
+  },
+  {
+    "file": "genuine_041.png",
+    "label": "genuine",
+    "brand": null,
+    "tampered": false
+  },
+  {
+    "file": "genuine_042.png",
+    "label": "genuine",
+    "brand": null,
+    "tampered": false
+  },
+  {
+    "file": "genuine_043.png",
+    "label": "genuine",
+    "brand": null,
+    "tampered": false
+  },
+  {
+    "file": "genuine_044.png",
+    "label": "genuine",
+    "brand": null,
+    "tampered": false
+  },
+  {
+    "file": "genuine_045.png",
+    "label": "genuine",
+    "brand": null,
+    "tampered": false
+  },
+  {
+    "file": "genuine_046.png",
+    "label": "genuine",
+    "brand": null,
+    "tampered": false
+  },
+  {
+    "file": "genuine_047.png",
+    "label": "genuine",
+    "brand": null,
+    "tampered": false
+  },
+  {
+    "file": "genuine_048.png",
+    "label": "genuine",
+    "brand": null,
+    "tampered": false
+  },
+  {
+    "file": "genuine_049.png",
+    "label": "genuine",
+    "brand": null,
+    "tampered": false
+  },
+  {
+    "file": "genuine_050.png",
+    "label": "genuine",
+    "brand": null,
+    "tampered": false
+  },
+  {
+    "file": "genuine_051.png",
+    "label": "genuine",
+    "brand": null,
+    "tampered": false
+  },
+  {
+    "file": "genuine_052.png",
+    "label": "genuine",
+    "brand": null,
+    "tampered": false
+  },
+  {
+    "file": "genuine_053.png",
+    "label": "genuine",
+    "brand": null,
+    "tampered": false
+  },
+  {
+    "file": "genuine_054.png",
+    "label": "genuine",
+    "brand": null,
+    "tampered": false
+  },
+  {
+    "file": "genuine_055.png",
+    "label": "genuine",
+    "brand": null,
+    "tampered": false
+  },
+  {
+    "file": "genuine_056.png",
+    "label": "genuine",
+    "brand": null,
+    "tampered": false
+  },
+  {
+    "file": "genuine_057.png",
+    "label": "genuine",
+    "brand": null,
+    "tampered": false
+  },
+  {
+    "file": "genuine_058.png",
+    "label": "genuine",
+    "brand": null,
+    "tampered": false
+  },
+  {
+    "file": "genuine_059.png",
+    "label": "genuine",
+    "brand": null,
+    "tampered": false
+  }
+]

@@ -1,0 +1,43 @@
+{
+  "seed": 2026,
+  "n_scam_calls": 427,
+  "n_genuine_calls": 349,
+  "scam_by_playbook": {
+    "fake_bank_officer": 61,
+    "wallet_reversal": 61,
+    "prize_offer": 61,
+    "relative_in_trouble": 61,
+    "courier_customs_police": 61,
+    "sim_block": 61,
+    "investment": 61
+  },
+  "scam_by_language": {
+    "ur": 86,
+    "rur": 92,
+    "pa": 72,
+    "en": 84,
+    "mixed": 93
+  },
+  "genuine_by_language": {
+    "ur": 75,
+    "rur": 78,
+    "mixed": 79,
+    "en": 67,
+    "pa": 50
+  },
+  "genuine_by_kind": {
+    "bank_reminder": 58,
+    "delivery": 58,
+    "family_chat": 58,
+    "customer_service": 58,
+    "friend_chat": 58,
+    "urgent_but_real": 58
+  },
+  "n_lens_images": 120,
+  "sources": {
+    "synthetic_template": 768,
+    "curated_pdf": 8
+  },
+  "calls_sha256": "565a7cf023281939af548e10c67375e59d2605485f19fcd9ca3105342a82adbd",
+  "note": "Synthetic-plus-curated corpus (PDF Section 8.1). Scam/genuine scripts are template-composed from ml/evaluation/phrase_bank.py; review and extend with Gemini or recorded calls before claiming real-world accuracy."
+}
