@@ -16,6 +16,7 @@ import {
   ChevronDown,
   Home,
   CheckCircle2,
+  Shield,
 } from 'lucide-react';
 
 export type ActiveTab =
@@ -43,67 +44,59 @@ interface HeaderProps {
 export const Header: React.FC<HeaderProps> = ({
   activeTab,
   setActiveTab,
-  systemStatus,
 }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [toolsDropdownOpen, setToolsDropdownOpen] = useState(false);
 
-  const interactiveTools: { id: ActiveTab; name: string; desc: string; icon: React.ReactNode; badge: string }[] = [
+  // Friendly everyday consumer descriptions - NO tech jargon or feature codes
+  const interactiveTools: { id: ActiveTab; name: string; desc: string; icon: React.ReactNode }[] = [
     {
       id: 'call-guard',
-      name: 'Live Call Guard',
-      desc: 'Real-time audio streaming & voice-clone shield',
-      icon: <Radio className="w-4 h-4 text-cyan-400" />,
-      badge: 'F1-F3',
+      name: 'Phone Call Guardian',
+      desc: 'Simulate a scam call and hear the safety warning',
+      icon: <Radio className="w-4 h-4 text-blue-600" />,
     },
     {
       id: 'mock-bank',
-      name: 'ShieldPay Bank Simulator',
-      desc: 'Graduated circuit-breaker & payment holds',
-      icon: <Smartphone className="w-4 h-4 text-emerald-400" />,
-      badge: 'F4/F5',
+      name: 'Safe Bank Simulator',
+      desc: 'See how your money is locked before theft happens',
+      icon: <Smartphone className="w-4 h-4 text-emerald-600" />,
     },
     {
       id: 'guardians',
-      name: 'Guardian Circle WhatsApp',
-      desc: 'Family proxy verification & emergency alert',
-      icon: <Users className="w-4 h-4 text-cyan-400" />,
-      badge: 'F6',
+      name: 'Family WhatsApp Alert',
+      desc: 'See how sons & daughters protect their parents',
+      icon: <Users className="w-4 h-4 text-indigo-600" />,
     },
     {
       id: 'scam-lens',
-      name: 'Scam Lens (Computer Vision)',
-      desc: 'Fake receipt & phishing screenshot inspector',
-      icon: <Eye className="w-4 h-4 text-purple-400" />,
-      badge: 'F9',
+      name: 'Fake Receipt Checker',
+      desc: 'Check suspicious JazzCash, Easypaisa, or bank slips',
+      icon: <Eye className="w-4 h-4 text-amber-600" />,
     },
     {
       id: 'scam-gym',
-      name: 'Scam Gym (AI Sparring)',
-      desc: 'Interactive scammer conversational sparring',
-      icon: <Swords className="w-4 h-4 text-amber-400" />,
-      badge: 'F12',
+      name: 'Scam Practice Chat',
+      desc: 'Practice chatting with a fake scammer safely',
+      icon: <Swords className="w-4 h-4 text-rose-600" />,
     },
     {
       id: 'scam-radar',
-      name: 'Scam Radar Intelligence',
-      desc: 'Vector syndicate clusters & threat map',
-      icon: <MapPin className="w-4 h-4 text-cyan-400" />,
-      badge: 'F10/F11',
+      name: 'Live Scam Trends',
+      desc: 'See what tricks scammers are using across the country',
+      icon: <MapPin className="w-4 h-4 text-teal-600" />,
     },
     {
       id: 'evidence-pack',
-      name: 'Evidence Pack Generator',
-      desc: '1-click forensic dossier for banks & police',
-      icon: <FileText className="w-4 h-4 text-rose-400" />,
-      badge: 'F13',
+      name: 'Police & Bank Report',
+      desc: 'Create an official report to help recover funds',
+      icon: <FileText className="w-4 h-4 text-blue-600" />,
     },
     {
       id: 'evaluation',
-      name: 'Evaluation & Benchmarks',
-      desc: 'Measured metrics on 777 multi-dialect calls',
-      icon: <BarChart3 className="w-4 h-4 text-emerald-400" />,
-      badge: '§8',
+      name: 'Protection Accuracy Test',
+      desc: 'Tested on 700+ real scam calls with 94%+ safety',
+      icon: <BarChart3 className="w-4 h-4 text-emerald-600" />,
     },
   ];
 
@@ -122,70 +115,61 @@ export const Header: React.FC<HeaderProps> = ({
   };
 
   return (
-    <header className="sticky top-0 z-50 bg-[#050811]/90 backdrop-blur-xl border-b border-slate-800/80 transition-all">
+    <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-200 transition-all shadow-xs">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-20">
           {/* Logo & Product Title */}
           <div
             onClick={() => setActiveTab('home')}
-            className="flex items-center gap-3.5 cursor-pointer group"
+            className="flex items-center gap-3 cursor-pointer group"
           >
-            <div className="relative flex items-center justify-center w-11 h-11 rounded-2xl bg-gradient-to-tr from-cyan-500/20 via-emerald-500/20 to-teal-500/30 border border-cyan-500/40 glow-cyan group-hover:scale-105 transition-all">
-              <ShieldAlert className="w-6 h-6 text-cyan-400" />
-              <div className="absolute -top-1 -right-1 w-3 h-3 bg-emerald-400 rounded-full border-2 border-[#050811] animate-pulse" />
+            <div className="relative flex items-center justify-center w-11 h-11 rounded-2xl bg-blue-50 border border-blue-200 group-hover:scale-105 transition-all shadow-xs">
+              <Shield className="w-6 h-6 text-blue-600" />
+              <div className="absolute -top-1 -right-1 w-3 h-3 bg-emerald-500 rounded-full border-2 border-white" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-xl sm:text-2xl font-black tracking-tight text-white">
-                  ScamShield <span className="bg-gradient-to-r from-cyan-400 via-teal-300 to-emerald-400 bg-clip-text text-transparent">Live</span>
-                </span>
-                <span className="px-2 py-0.5 text-[9px] uppercase font-black tracking-wider rounded-md bg-cyan-950/80 text-cyan-300 border border-cyan-800/60">
-                  BFSI 2026
+                <span className="text-xl sm:text-2xl font-black tracking-tight text-slate-900">
+                  ScamShield <span className="text-blue-600">Live</span>
                 </span>
               </div>
-              <p className="text-xs text-slate-400 hidden sm:block font-medium">
-                Autonomous Voice Fraud Interlock & Banking Circuit-Breaker
+              <p className="text-xs text-slate-500 hidden sm:block font-medium">
+                Your Personal Guardian Against Phone Scams & Money Theft
               </p>
             </div>
           </div>
 
           {/* Desktop Clean Navigation */}
-          <nav className="hidden lg:flex items-center gap-7 text-xs font-semibold text-slate-300">
+          <nav className="hidden lg:flex items-center gap-8 text-sm font-semibold text-slate-700">
             <button
               onClick={() => handleNavClick('overview')}
-              className="hover:text-cyan-400 transition-colors cursor-pointer"
+              className="hover:text-blue-600 transition-colors cursor-pointer"
             >
-              Overview
+              How It Helps
             </button>
             <button
-              onClick={() => handleNavClick('the-threat')}
-              className="hover:text-cyan-400 transition-colors cursor-pointer"
+              onClick={() => handleNavClick('the-problem')}
+              className="hover:text-blue-600 transition-colors cursor-pointer"
             >
-              The Crisis
+              Common Scams
             </button>
             <button
               onClick={() => handleNavClick('how-it-works')}
-              className="hover:text-cyan-400 transition-colors cursor-pointer"
+              className="hover:text-blue-600 transition-colors cursor-pointer"
             >
-              Circuit-Breaker
+              3 Simple Steps
             </button>
             <button
-              onClick={() => handleNavClick('technology')}
-              className="hover:text-cyan-400 transition-colors cursor-pointer"
+              onClick={() => handleNavClick('features')}
+              className="hover:text-blue-600 transition-colors cursor-pointer"
             >
-              Technology & AI
-            </button>
-            <button
-              onClick={() => handleNavClick('gallery')}
-              className="hover:text-cyan-400 transition-colors cursor-pointer"
-            >
-              Visual Showcase
+              Features
             </button>
             <button
               onClick={() => handleNavClick('faq')}
-              className="hover:text-cyan-400 transition-colors cursor-pointer"
+              className="hover:text-blue-600 transition-colors cursor-pointer"
             >
-              FAQ
+              Questions & Answers
             </button>
 
             {/* Interactive Tools Dropdown */}
@@ -193,17 +177,17 @@ export const Header: React.FC<HeaderProps> = ({
               <button
                 onClick={() => setToolsDropdownOpen(!toolsDropdownOpen)}
                 onBlur={() => setTimeout(() => setToolsDropdownOpen(false), 200)}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-900/90 border border-slate-700/80 hover:border-cyan-500/50 hover:text-cyan-300 transition-all cursor-pointer text-slate-200"
+                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 hover:border-blue-300 hover:text-blue-600 transition-all cursor-pointer text-slate-800 font-semibold"
               >
-                <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
-                <span>Live Interactive Tools</span>
-                <ChevronDown className="w-3 h-3 text-slate-400" />
+                <Sparkles className="w-4 h-4 text-blue-600" />
+                <span>Try Demo Features</span>
+                <ChevronDown className="w-3.5 h-3.5 text-slate-500" />
               </button>
 
               {toolsDropdownOpen && (
-                <div className="absolute top-full right-0 mt-2 w-80 rounded-2xl bg-slate-950/95 border border-slate-800 backdrop-blur-2xl shadow-2xl p-2 z-50 space-y-1">
-                  <div className="px-3 py-2 border-b border-slate-800/80 text-[10px] uppercase font-bold text-slate-400 tracking-wider">
-                    Interactive Modules & Simulators
+                <div className="absolute top-full right-0 mt-2 w-80 rounded-2xl bg-white border border-slate-200 shadow-xl p-2 z-50 space-y-1">
+                  <div className="px-3 py-2 border-b border-slate-100 text-[11px] uppercase font-bold text-slate-400 tracking-wider">
+                    Interactive Safety Demos
                   </div>
                   {interactiveTools.map((t) => (
                     <button
@@ -212,21 +196,16 @@ export const Header: React.FC<HeaderProps> = ({
                         setActiveTab(t.id);
                         setToolsDropdownOpen(false);
                       }}
-                      className="w-full text-left p-2.5 rounded-xl hover:bg-slate-900/90 transition-all flex items-start gap-3 cursor-pointer group"
+                      className="w-full text-left p-2.5 rounded-xl hover:bg-slate-50 transition-all flex items-start gap-3 cursor-pointer group"
                     >
-                      <div className="p-2 rounded-lg bg-slate-900 border border-slate-800 group-hover:border-cyan-500/40">
+                      <div className="p-2 rounded-xl bg-slate-100 border border-slate-200 group-hover:bg-blue-50 group-hover:border-blue-200 shrink-0">
                         {t.icon}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs font-bold text-white group-hover:text-cyan-300">
-                            {t.name}
-                          </span>
-                          <span className="text-[9px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 font-mono">
-                            {t.badge}
-                          </span>
-                        </div>
-                        <p className="text-[11px] text-slate-400 truncate mt-0.5">
+                        <span className="text-xs font-bold text-slate-900 group-hover:text-blue-600 block">
+                          {t.name}
+                        </span>
+                        <p className="text-[11px] text-slate-500 truncate mt-0.5">
                           {t.desc}
                         </p>
                       </div>
@@ -239,28 +218,26 @@ export const Header: React.FC<HeaderProps> = ({
 
           {/* Right Action & Status Indicator */}
           <div className="hidden sm:flex items-center gap-4">
-            <div className="flex items-center gap-2 text-xs font-mono px-3 py-1.5 rounded-xl bg-slate-900/80 border border-slate-800 text-slate-300">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-              <span>{systemStatus.geminiModel}</span>
-              <span className="text-slate-600">•</span>
-              <span className="text-emerald-400">{systemStatus.latencyMs}ms</span>
+            <div className="flex items-center gap-2 text-xs font-medium px-3.5 py-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              <span>Protection Active</span>
             </div>
 
             {activeTab === 'home' ? (
               <button
                 onClick={() => setActiveTab('call-guard')}
-                className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-teal-400 hover:from-cyan-400 hover:to-teal-300 text-slate-950 font-black text-xs flex items-center gap-2 shadow-lg shadow-cyan-950/60 cursor-pointer transition-all transform hover:-translate-y-0.5"
+                className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center gap-2 shadow-md shadow-blue-600/20 cursor-pointer transition-all transform hover:-translate-y-0.5"
               >
-                <span>Launch Live Demo</span>
+                <span>Try Live Demo</span>
                 <ArrowRight className="w-3.5 h-3.5" />
               </button>
             ) : (
               <button
                 onClick={() => setActiveTab('home')}
-                className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-cyan-300 border border-cyan-500/40 font-bold text-xs flex items-center gap-1.5 cursor-pointer"
+                className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs flex items-center gap-1.5 cursor-pointer border border-slate-200"
               >
-                <Home className="w-3.5 h-3.5" />
-                <span>Return to Overview</span>
+                <Home className="w-3.5 h-3.5 text-blue-600" />
+                <span>Return to Home</span>
               </button>
             )}
           </div>
@@ -269,7 +246,7 @@ export const Header: React.FC<HeaderProps> = ({
           <div className="lg:hidden flex items-center gap-2">
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="p-2.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-200 hover:text-white cursor-pointer"
+              className="p-2.5 rounded-xl bg-slate-100 border border-slate-200 text-slate-700 hover:text-slate-900 cursor-pointer"
             >
               {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
@@ -278,49 +255,43 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* Mobile Navigation Drawer */}
         {mobileMenuOpen && (
-          <div className="lg:hidden py-4 border-t border-slate-800 space-y-3">
+          <div className="lg:hidden py-4 border-t border-slate-200 space-y-3 bg-white">
             <div className="grid grid-cols-2 gap-2 text-xs font-semibold">
               <button
                 onClick={() => handleNavClick('overview')}
-                className="p-2.5 rounded-xl bg-slate-900/80 text-left text-slate-200"
+                className="p-2.5 rounded-xl bg-slate-50 text-left text-slate-700 hover:text-blue-600"
               >
-                Overview
+                How It Helps
               </button>
               <button
-                onClick={() => handleNavClick('the-threat')}
-                className="p-2.5 rounded-xl bg-slate-900/80 text-left text-slate-200"
+                onClick={() => handleNavClick('the-problem')}
+                className="p-2.5 rounded-xl bg-slate-50 text-left text-slate-700 hover:text-blue-600"
               >
-                The Crisis
+                Common Scams
               </button>
               <button
                 onClick={() => handleNavClick('how-it-works')}
-                className="p-2.5 rounded-xl bg-slate-900/80 text-left text-slate-200"
+                className="p-2.5 rounded-xl bg-slate-50 text-left text-slate-700 hover:text-blue-600"
               >
-                Circuit-Breaker
+                3 Simple Steps
               </button>
               <button
-                onClick={() => handleNavClick('technology')}
-                className="p-2.5 rounded-xl bg-slate-900/80 text-left text-slate-200"
+                onClick={() => handleNavClick('features')}
+                className="p-2.5 rounded-xl bg-slate-50 text-left text-slate-700 hover:text-blue-600"
               >
-                Technology & AI
-              </button>
-              <button
-                onClick={() => handleNavClick('gallery')}
-                className="p-2.5 rounded-xl bg-slate-900/80 text-left text-slate-200"
-              >
-                Visual Showcase
+                Features
               </button>
               <button
                 onClick={() => handleNavClick('faq')}
-                className="p-2.5 rounded-xl bg-slate-900/80 text-left text-slate-200"
+                className="p-2.5 rounded-xl bg-slate-50 text-left text-slate-700 hover:text-blue-600"
               >
-                FAQ
+                Questions & Answers
               </button>
             </div>
 
-            <div className="pt-2 border-t border-slate-800/80">
-              <span className="text-[10px] uppercase font-bold text-slate-400 block mb-2">
-                Launch Live Tools
+            <div className="pt-2 border-t border-slate-100">
+              <span className="text-[11px] uppercase font-bold text-slate-400 block mb-2">
+                Try Demo Features
               </span>
               <div className="grid grid-cols-1 gap-1.5">
                 {interactiveTools.map((t) => (
@@ -330,15 +301,12 @@ export const Header: React.FC<HeaderProps> = ({
                       setActiveTab(t.id);
                       setMobileMenuOpen(false);
                     }}
-                    className="p-2 rounded-xl bg-slate-900/60 hover:bg-slate-900 flex items-center justify-between text-xs text-slate-300"
+                    className="p-2 rounded-xl bg-slate-50 hover:bg-slate-100 flex items-center justify-between text-xs text-slate-800"
                   >
                     <div className="flex items-center gap-2">
                       {t.icon}
-                      <span>{t.name}</span>
+                      <span className="font-medium">{t.name}</span>
                     </div>
-                    <span className="text-[9px] px-1.5 py-0.5 rounded bg-slate-800 font-mono text-slate-400">
-                      {t.badge}
-                    </span>
                   </button>
                 ))}
               </div>
