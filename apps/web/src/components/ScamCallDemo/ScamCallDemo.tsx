@@ -21,6 +21,9 @@ import {
   AlertOctagon,
   Radio,
   UserCheck,
+  Settings,
+  Key,
+  Check,
 } from 'lucide-react';
 
 type CallState = 'idle' | 'dialing' | 'connected' | 'terminated';
@@ -51,6 +54,31 @@ export const ScamCallDemo: React.FC = () => {
   const [detectedTactics, setDetectedTactics] = useState<string[]>([]);
   const [alertTriggered, setAlertTriggered] = useState<boolean>(false);
   const [vibrationActive, setVibrationActive] = useState<boolean>(false);
+
+  // Optional AI Studio Gemini API Key Configuration
+  const [apiKey, setApiKey] = useState<string>(() => {
+    return typeof window !== 'undefined' ? localStorage.getItem('scamshield_gemini_api_key') || '' : '';
+  });
+  const [showSettings, setShowSettings] = useState(false);
+  const [keyInput, setKeyInput] = useState(apiKey);
+  const [keySaved, setKeySaved] = useState(false);
+
+  const saveApiKey = () => {
+    const clean = keyInput.trim();
+    setApiKey(clean);
+    if (typeof window !== 'undefined') {
+      if (clean) {
+        localStorage.setItem('scamshield_gemini_api_key', clean);
+      } else {
+        localStorage.removeItem('scamshield_gemini_api_key');
+      }
+    }
+    setKeySaved(true);
+    setTimeout(() => {
+      setKeySaved(false);
+      setShowSettings(false);
+    }, 1200);
+  };
 
   // Web Audio Ringtone Generator (Tring... Tring...)
   const playRingtone = () => {
@@ -162,13 +190,14 @@ export const ScamCallDemo: React.FC = () => {
     setHistory(updatedHistory);
 
     try {
-      // Call backend
+      // Call backend with optional apiKey
       const res = await fetch('/v1/demo/scam-call/interact', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           message: text,
           history: updatedHistory,
+          api_key: apiKey || undefined,
         }),
       });
 
@@ -191,38 +220,67 @@ export const ScamCallDemo: React.FC = () => {
         throw new Error('API error');
       }
     } catch {
-      // Fallback
+      // Intelligent Client Fallback
       handleFallbackResponse(text, updatedHistory);
     } finally {
       setLoading(false);
     }
   };
 
-  // Fallback response generator if offline
+  // Intelligent Fallback response generator if offline
   const handleFallbackResponse = (text: string, currentHistory: CallTurn[]) => {
     const lower = text.toLowerCase();
-    let reply = 'Arey beta mera account kyun block hoga? Main ne to subah hi use kiya tha, koi ghalti nahi ki!';
+    let reply = 'Arey beta mera account kyun block hoga? Main ne to kal hi pension nikalwayi thi, koi ghalti nahi ki!';
     let score = riskScore;
     const tactics = [...detectedTactics];
 
-    if (lower.includes('block') || lower.includes('freeze') || lower.includes('band')) {
+    if (lower.includes('otp') || lower.includes('pin') || lower.includes('code') || lower.includes('password') || text.includes('او ٹی پی')) {
+      reply = 'Lekin beta! SMS me to motay alfaz me likha hai ke 6-digit OTP code kisi se share na karein. Main kaisay de doon?';
+      if (!tactics.includes('Credential & OTP Demand')) tactics.push('Credential & OTP Demand');
+      score = 98;
+    } else if (lower.includes('whatsapp') && (lower.includes('code') || lower.includes('sms'))) {
+      reply = 'WhatsApp ka verification code? Arey bhai WhatsApp ka code to personal hota hai! Bank ka WhatsApp se kya talluq?';
+      if (!tactics.includes('Credential & OTP Demand')) tactics.push('Credential & OTP Demand');
+      score = 98;
+    } else if (lower.includes('block') || lower.includes('freeze') || lower.includes('band')) {
       reply = 'Arey beta mera account kyun block hoga? Main ne to subah hi use kiya tha, koi ghalti nahi ki! Main kya karoon?';
       if (!tactics.includes('Manufactured Urgency')) tactics.push('Manufactured Urgency');
       score = Math.max(score, 65);
-    } else if (lower.includes('otp') || lower.includes('code') || lower.includes('pin') || text.includes('او ٹی پی')) {
-      reply = 'Lekin beta! SMS me to saaf likha hai ke 6-digit OTP code kisi se share na karein. Main kaisay de doon?';
-      if (!tactics.includes('Credential & OTP Demand')) tactics.push('Credential & OTP Demand');
-      score = 98;
-    } else if (lower.includes('police') || lower.includes('jail') || lower.includes('arrest')) {
-      reply = 'Arey bhai police kyun ayegi mere ghar? Khuda ka khauf karein, main shareef buzoorg aadmi hoon!';
+    } else if (lower.includes('police') || lower.includes('jail') || lower.includes('arrest') || lower.includes('fia') || lower.includes('court')) {
+      reply = 'Arey bhai khuda ka khauf karein, police aur FIA kyun ayegi mere ghar? Main 58 saal ka shareef retired teacher hoon!';
       if (!tactics.includes('Authority Threat')) tactics.push('Authority Threat');
       score = Math.max(score, 80);
-    } else if (lower.includes('state bank') || lower.includes('manager')) {
-      reply = 'Ji State Bank se? Batayein beta mere account ka kya masla bana hai?';
-      if (!tactics.includes('Authority Impersonation')) tactics.push('Authority Impersonation');
+    } else if (lower.includes('bijli') || lower.includes('k-electric') || lower.includes('wapda') || lower.includes('meter')) {
+      reply = 'Bijli ka bill to main ne kal hi HBL app se pay kiya hai! Yeh meter kaatne ki dhamki de kar aap mujhe dara kyun rahe hain?';
+      if (!tactics.includes('Manufactured Urgency')) tactics.push('Manufactured Urgency');
       score = Math.max(score, 50);
+    } else if (lower.includes('easypaisa') || lower.includes('jazzcash') || lower.includes('transfer') || lower.includes('bhejo')) {
+      reply = 'Bank wale kabhi JazzCash ya Easypaisa par paise nahi mangte! Main anjaan number pe bina betay se pooche kaisay bhej doon?';
+      if (!tactics.includes('Payment Redirection')) tactics.push('Payment Redirection');
+      score = Math.max(score, 60);
+    } else if (lower.includes('anydesk') || lower.includes('teamviewer') || lower.includes('download')) {
+      reply = 'Main koi aisi anjaan app download nahi karunga! Mere betay ne bataya hai ke AnyDesk se mobile ka sara control chala jata hai.';
+      if (!tactics.includes('Remote Access Risk')) tactics.push('Remote Access Risk');
+      score = Math.max(score, 60);
+    } else if (lower.includes('naam kya') || lower.includes('aap kon') || lower.includes('who are you')) {
+      reply = 'Mera naam to Tariq Mahmood hai beta. Lekin call aap ne ki hai, aap apna shanaakhti naam aur post batayein pehle.';
+      score = Math.max(score, 20);
+    } else if (lower.includes('bete ka number') || lower.includes('number do')) {
+      reply = 'Main phone par kisi anjaan bande ko apne betay Ali ka number kyun doon? Aap pehle apna mudda batayein.';
+      score = Math.max(score, 25);
+    } else if (lower.includes('kahan rehte') || lower.includes('address')) {
+      reply = 'Main to Karachi mein apnay ghar mein rehta hoon. Lekin aap phone par mera address kyun pooch rahe hain?';
+      score = Math.max(score, 20);
+    } else if (lower.includes('sun rahe') || lower.includes('awaaz')) {
+      reply = 'Ji ji beta, bilkul saaf awaaz aa rahi hai. Aap farmayein kya kehna chahte hain?';
+      score = Math.max(score, 15);
+    } else if (lower.includes('state bank') || lower.includes('meezan') || lower.includes('hbl') || lower.includes('manager')) {
+      reply = 'Acha aap bank se bol rahe hain? Mera account to Saddar branch mein hai, Asim sahab manager hain wahan. Aap unhein jaante hain?';
+      if (!tactics.includes('Authority Impersonation')) tactics.push('Authority Impersonation');
+      score = Math.max(score, 45);
     } else {
-      reply = 'Walaikum Assalam beta! Khairiyat? Aap kis silsilay me baat kar rahe hain?';
+      reply = 'Walaikum Assalam beta! Khairiyat? Aap kon baat kar rahe hain aur kis silsilay me call ki hai?';
+      score = Math.max(score, 15);
     }
 
     setRiskScore(score);
@@ -301,22 +359,30 @@ export const ScamCallDemo: React.FC = () => {
     return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
   };
 
-  // Quick Scammer phrases to test
+  // Quick Scammer phrases across diverse fraud genres
   const quickPrompts = [
     {
-      label: '🏦 Say: Account Block ho raha hai',
+      label: '🏦 Bank Block: Main State Bank se bol raha hoon, account block ho raha hai',
       text: 'Assalam-o-Alaikum, main State Bank se bol raha hoon, aap ka account block ho raha hai.',
     },
     {
-      label: '🔑 Say: Jaldi 6-digit OTP batao (Triggers Alarm)',
+      label: '🔑 OTP Demand: Jaldi 6-digit OTP batao (Triggers Alarm)',
       text: 'Jaldi se apna 6-digit OTP code batayein jo phone pe aya hai warna account band!',
     },
     {
-      label: '⏳ Say: 5 minute me police raid hogi',
+      label: '🚨 Police Threat: FIA me case chala gaya hai, 5 minute me raid hogi',
       text: 'Aap ka case FIA me chala gaya hai, 5 minute me police aap ke ghar pohnchegi!',
     },
     {
-      label: '🇵🇰 اردو: اپنا خفیہ پاسورڈ اور کوڈ دیں',
+      label: '💡 WAPDA / Bijli: Meter kat raha hai, foran 10 hazar Easypaisa karo',
+      text: 'K-Electric head office se bol raha hoon, bijli meter foran kat raha hai!',
+    },
+    {
+      label: '📲 WhatsApp Code: WhatsApp par 6-digit verification code aya hai',
+      text: 'Aap ke WhatsApp par 6 digit code aaya hai, foran parh kar batayein!',
+    },
+    {
+      label: '🇵🇰 اردو رسم الخط: فوری طور پر اپنا پاسورڈ اور کوڈ بتائیں',
       text: 'فوری طور پر اپنا پاسورڈ اور او ٹی پی بتائیں تاکہ اکاؤنٹ بحال ہو سکے!',
     },
   ];
@@ -324,34 +390,97 @@ export const ScamCallDemo: React.FC = () => {
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       {/* Top Header Card */}
-      <div className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-2xl bg-blue-100 dark:bg-blue-950 text-blue-600 dark:text-blue-400 flex items-center justify-center font-bold shrink-0">
-            <PhoneCall className="w-5 h-5" />
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h2 className="text-base font-black text-slate-900 dark:text-white">
-                Interactive Voice Scam Call
-              </h2>
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300">
-                You Are The Caller (Scammer)
-              </span>
+      <div className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs flex flex-col gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-blue-100 dark:bg-blue-950 text-blue-600 dark:text-blue-400 flex items-center justify-center font-bold shrink-0">
+              <PhoneCall className="w-5 h-5" />
             </div>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              Call innocent citizen Uncle Tariq. Speak or type scam tricks and watch ScamShield intervene!
-            </p>
+            <div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <h2 className="text-base font-black text-slate-900 dark:text-white">
+                  Interactive Voice Scam Call
+                </h2>
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300">
+                  You Are The Caller (Scammer)
+                </span>
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 flex items-center gap-1">
+                  <Sparkles className="w-3 h-3 text-emerald-500" />
+                  {apiKey ? 'Gemini 2.5 Flash Live' : 'Smart Omni-Context Brain'}
+                </span>
+              </div>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                Call citizen Uncle Tariq. Speak or type in Roman Urdu, Urdu script, or English and watch ScamShield intervene!
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 self-start sm:self-auto">
+            <button
+              onClick={() => setShowSettings(!showSettings)}
+              className="px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold flex items-center gap-1.5 cursor-pointer"
+              title="Configure AI Engine"
+            >
+              <Settings className="w-3.5 h-3.5" />
+              <span>{apiKey ? 'AI Key Connected' : 'AI Settings'}</span>
+            </button>
+
+            {callState !== 'idle' && (
+              <button
+                onClick={() => setCallState('idle')}
+                className="px-3.5 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold flex items-center gap-1.5 cursor-pointer"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                <span>New Call</span>
+              </button>
+            )}
           </div>
         </div>
 
-        {callState !== 'idle' && (
-          <button
-            onClick={() => setCallState('idle')}
-            className="px-3.5 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 text-xs font-bold flex items-center gap-1.5 cursor-pointer self-start sm:self-auto"
-          >
-            <RotateCcw className="w-3.5 h-3.5" />
-            <span>New Call</span>
-          </button>
+        {/* Expandable AI Key Configuration Panel */}
+        {showSettings && (
+          <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 space-y-3">
+            <div className="flex items-center justify-between text-xs">
+              <span className="font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                <Key className="w-4 h-4 text-amber-500" />
+                Google AI Studio API Key (Optional for Zero-Shot Live Gemini 2.5 Flash)
+              </span>
+              <span className="text-[11px] text-slate-500">
+                100% Free at aistudio.google.com
+              </span>
+            </div>
+            <p className="text-[11px] text-slate-600 dark:text-slate-400">
+              Uncle Tariq runs natively on our built-in <strong>Omni-Intelligent Contextual Brain</strong> (45+ fraud categories, dialect matching, entity extraction). For open-ended live Gemini reasoning, paste your free Google AI Studio key below:
+            </p>
+            <div className="flex items-center gap-2">
+              <input
+                type="password"
+                value={keyInput}
+                onChange={(e) => setKeyInput(e.target.value)}
+                placeholder="AIzaSy... (Paste Gemini API Key)"
+                className="flex-1 px-3 py-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 text-xs font-mono text-slate-900 dark:text-white focus:outline-none focus:border-blue-500"
+              />
+              <button
+                onClick={saveApiKey}
+                className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold cursor-pointer flex items-center gap-1.5"
+              >
+                {keySaved ? <Check className="w-3.5 h-3.5" /> : null}
+                <span>{keySaved ? 'Saved!' : 'Save Key'}</span>
+              </button>
+              {apiKey && (
+                <button
+                  onClick={() => {
+                    setKeyInput('');
+                    setApiKey('');
+                    if (typeof window !== 'undefined') localStorage.removeItem('scamshield_gemini_api_key');
+                  }}
+                  className="px-3 py-2 rounded-lg bg-rose-50 dark:bg-rose-950/50 hover:bg-rose-100 text-rose-700 dark:text-rose-300 text-xs font-bold cursor-pointer"
+                >
+                  Clear
+                </button>
+              )}
+            </div>
+          </div>
         )}
       </div>
 

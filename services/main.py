@@ -200,7 +200,8 @@ def interact_scam_call(req: ScamCallRequest):
     citizen_reply = generate_citizen_response(
         req.message,
         req.history,
-        gemini_client=gemini_engine.client
+        gemini_client=gemini_engine.client,
+        custom_api_key=req.api_key
     )
     eval_result = evaluate_scammer_tactics(req.history, req.message)
 
