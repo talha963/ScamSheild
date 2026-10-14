@@ -3,6 +3,7 @@ import { Header, ActiveTab } from './components/Header';
 import { Footer } from './components/Footer';
 import { HomePage } from './components/HomePage/HomePage';
 import { CallCompanion } from './components/CallCompanion/CallCompanion';
+import { ScamCallDemo } from './components/ScamCallDemo/ScamCallDemo';
 import { MockBank } from './components/MockBank/MockBank';
 import { ScamLens } from './components/ScamLens/ScamLens';
 import { ScamGym } from './components/ScamGym/ScamGym';
@@ -111,14 +112,9 @@ export function App() {
             </div>
 
             {/* Active Interactive Component */}
+            {/* Active Interactive Component: Scam Call Role-Play Simulator */}
             {activeTab === 'call-guard' && (
-              <CallCompanion
-                currentRiskEvent={currentRiskEvent}
-                onUpdateRiskEvent={setCurrentRiskEvent}
-                onTriggerBankHold={handleTriggerBankHold}
-                onOpenMockBank={() => setActiveTab('mock-bank')}
-                onViewEvidencePack={() => setActiveTab('evidence-pack')}
-              />
+              <ScamCallDemo />
             )}
 
             {activeTab === 'mock-bank' && (

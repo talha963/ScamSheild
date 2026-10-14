@@ -38,7 +38,17 @@ app.include_router(audio_router)
 app.include_router(evaluation_router)
 app.mount("/bank", bank_subapp)
 
+from services.analysis.gemini_engine import GeminiAnalysisEngine
+from services.analysis.scam_call_simulator import (
+    ScamCallRequest,
+    ScamCallResponse,
+    generate_citizen_response,
+    evaluate_scammer_tactics,
+    detect_language,
+)
+
 lens_engine = ScamLensEngine()
+gemini_engine = GeminiAnalysisEngine()
 
 @app.get("/health")
 @app.get("/api/health")
@@ -178,6 +188,34 @@ def generate_evidence_pack(call_id: str):
         bank_details={"account": "PK60HABB00018492019482", "held_amount": "85,000 PKR", "payee": "Muhammad Rizwan"},
         guardian_audit={"notified": "Hamza Tariq (+92 300 8291034)", "channel": "WhatsApp", "status": "Delivered"},
         cryptographic_signature=hash_digest
+    )
+
+@app.post("/v1/demo/scam-call/interact", response_model=ScamCallResponse)
+def interact_scam_call(req: ScamCallRequest):
+    """
+    Interactive Demo: User acts as scammer talking to AI citizen Uncle Tariq.
+    ScamShield Guardian continuously checks scam conditions from documentation.
+    """
+    lang = detect_language(req.message)
+    citizen_reply = generate_citizen_response(
+        req.message,
+        req.history,
+        gemini_client=gemini_engine.client
+    )
+    eval_result = evaluate_scammer_tactics(req.history, req.message)
+
+    return ScamCallResponse(
+        ai_response=citizen_reply,
+        language_detected=lang,
+        risk_score=eval_result["risk_score"],
+        tier=eval_result["tier"],
+        detected_tactics=eval_result["detected_tactics"],
+        evidence_phrases=eval_result["evidence_phrases"],
+        alert_triggered=eval_result["alert_triggered"],
+        cut_call_warning_en="CUT THE CALL! The person on this call is a SCAMMER!",
+        cut_call_warning_ur="فوراً کال کاٹ دیں! دوسری طرف بات کرنے والا فراڈیا ہے!",
+        bank_hold_simulated=eval_result["tier"] >= 3,
+        guardian_alert_simulated=eval_result["tier"] >= 3
     )
 
 # Mount Static Frontend if built in dist

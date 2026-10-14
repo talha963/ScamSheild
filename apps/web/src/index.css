@@ -94,3 +94,9 @@
 .wave-bar-3 { animation: wave-bounce 0.9s ease-in-out infinite 0.4s; }
 .wave-bar-4 { animation: wave-bounce 1.3s ease-in-out infinite 0.1s; }
 .wave-bar-5 { animation: wave-bounce 1.0s ease-in-out infinite 0.3s; }
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-7px) rotate(-1deg); }
+  40%, 80% { transform: translateX(7px) rotate(1deg); }
+}

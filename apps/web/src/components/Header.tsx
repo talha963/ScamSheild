@@ -49,63 +49,14 @@ export const Header: React.FC<HeaderProps> = ({
   const [toolsDropdownOpen, setToolsDropdownOpen] = useState(false);
   const [languageMode, setLanguageMode] = useState<'ur' | 'en'>('ur');
 
-  // Friendly everyday consumer descriptions
+  // User requested: for now when clicking try demo, only scam call feature is shown
   const interactiveTools: { id: ActiveTab; name: string; desc: string; icon: React.ReactNode; color: string }[] = [
     {
       id: 'call-guard',
-      name: 'Phone Call Guardian',
-      desc: 'Simulate a scam call & hear the live Urdu voice warning',
+      name: 'Scam Call Simulator (Role-Play)',
+      desc: 'Act as a scammer & test real-time AI citizen responses',
       icon: <Radio className="w-4 h-4 text-blue-600 dark:text-blue-400" />,
       color: 'blue',
-    },
-    {
-      id: 'mock-bank',
-      name: 'Safe Bank Simulator',
-      desc: 'See how your money is locked before theft can happen',
-      icon: <Smartphone className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />,
-      color: 'emerald',
-    },
-    {
-      id: 'guardians',
-      name: 'Family WhatsApp Alert',
-      desc: 'See how sons & daughters protect their parents with 1 tap',
-      icon: <Users className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />,
-      color: 'indigo',
-    },
-    {
-      id: 'scam-lens',
-      name: 'Fake Receipt Checker',
-      desc: 'Inspect suspicious JazzCash, Easypaisa, or bank slips',
-      icon: <Eye className="w-4 h-4 text-amber-600 dark:text-amber-400" />,
-      color: 'amber',
-    },
-    {
-      id: 'scam-gym',
-      name: 'Scam Practice Chat',
-      desc: 'Practice chatting with a fake scammer safely to train',
-      icon: <Swords className="w-4 h-4 text-rose-600 dark:text-rose-400" />,
-      color: 'rose',
-    },
-    {
-      id: 'scam-radar',
-      name: 'Live Scam Trends',
-      desc: 'See what tricks scammers are using across the country',
-      icon: <MapPin className="w-4 h-4 text-teal-600 dark:text-teal-400" />,
-      color: 'teal',
-    },
-    {
-      id: 'evidence-pack',
-      name: 'Police & Bank Report',
-      desc: '1-click official report to help recover scammed funds',
-      icon: <FileText className="w-4 h-4 text-blue-600 dark:text-blue-400" />,
-      color: 'blue',
-    },
-    {
-      id: 'evaluation',
-      name: 'Safety Quality Test',
-      desc: 'Tested on 700+ real calls with 94%+ safety accuracy',
-      icon: <BarChart3 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />,
-      color: 'emerald',
     },
   ];
 
