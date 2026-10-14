@@ -36,38 +36,39 @@ def detect_language(text: str) -> str:
     lower = text.lower()
     roman_urdu_words = [
         "aap", "ap", "mera", "meri", "mere", "main", "mein", "hum", "tum", "karo", "karein", "karna",
-        "hai", "hein", "hain", "ho", "bhejo", "bhejiye", "batao", "batayein", "mat", "ruko", "chup",
-        "pakar", "foran", "warna", "bhai", "sahab", "paise", "paisa", "rupay", "band", "khata", "khabar",
-        "ghalti", "fauran", "jaldi", "police", "jail", "parh", "aya", "gaya", "hoga"
+        "hai", "hein", "hain", "ho", "hora", "raha", "rahe", "bhejo", "bhejiye", "batao", "batayein",
+        "mat", "ruko", "chup", "pakar", "foran", "warna", "bhai", "sahab", "paise", "paisa", "rupay",
+        "band", "khata", "khabar", "ghalti", "fauran", "jaldi", "police", "jail", "parh", "aya", "gaya",
+        "hoga", "kyun", "kyu", "kya", "kiya", "kuch", "nahi", "nai", "na"
     ]
     matches = sum(1 for w in lower.split() if w in roman_urdu_words)
-    if matches >= 2:
+    if matches >= 1:
         return "roman_urdu"
     
     return "english"
 
 def generate_citizen_response(user_text: str, history: List[CallTurn], gemini_client=None) -> str:
     lang = detect_language(user_text)
-    lower = user_text.lower()
+    lower = user_text.lower().strip()
 
-    # Try Gemini 2.5 Flash if available
+    # 1. Try Gemini 2.5 Flash if available
     if gemini_client:
         try:
             conversation_history_text = "\n".join([f"{t.speaker}: {t.text}" for t in history[-6:]])
-            prompt = f"""You are Uncle Tariq, a 58-year-old innocent Pakistani citizen who answered an unknown phone call.
-The caller (the user) is calling you and attempting to scam you.
+            prompt = f"""You are Uncle Tariq, a 58-year-old innocent Pakistani citizen who just answered a phone call.
+The caller (the user) is calling you and trying to scam you.
 
 STRICT INSTRUCTIONS:
-1. LANGUAGE MATCHING:
-   - If caller used Urdu script (اردو), reply in natural, polite Urdu script.
-   - If caller used Roman Urdu (e.g. 'Aap ka account block ho raha hai'), reply in natural everyday Roman Urdu.
+1. SPECIFICITY: Respond DIRECTLY and SPECIFICALLY to what the caller just said.
+   - If they say your account is being blocked, ask in shock why your account is blocked. DO NOT mention police unless the caller mentioned police.
+   - If they ask for OTP or code, refuse or ask why bank needs OTP.
+   - If they mention police or arrest, panic about police.
+   - If they ask your name or details, answer politely as Tariq Mahmood.
+2. LANGUAGE MATCHING:
+   - If caller used Urdu script (اردو), reply in natural Urdu script.
+   - If caller used Roman Urdu (e.g. 'apka account block hora hai'), reply in everyday natural Roman Urdu (e.g. 'Arey beta mera account kyun block hoga? Maine to subah hi use kiya tha!').
    - If caller used English, reply in polite English.
-2. CITIZEN BEHAVIOR:
-   - You are an innocent citizen with bank savings.
-   - If they claim to be from the bank or police, you sound worried and polite: "Arey beta, mera account kyun block hoga?"
-   - If they ask for OTP, PIN, or password, you are hesitant: "Lekin SMS me to likha hai kisi ko OTP na dein... aap sach me bank se hain?"
-   - If they threaten you with police/arrest, you get frightened: "Nahi beta, police ko mat bulao, main samajhta hoon..."
-   - Keep reply under 25 words. Do not break character.
+3. Keep response under 20 words. Sound like a real person on a phone call.
 
 CONVERSATION SO FAR:
 {conversation_history_text}
@@ -84,44 +85,78 @@ Uncle Tariq:"""
         except Exception as e:
             logger.warning(f"Gemini generation error in citizen simulator: {e}. Using offline intelligent matcher.")
 
-    # Intelligent contextual fallback matching
-    otp_words = ["otp", "pin", "password", "code", "6-digit", "digit", "cvv", "number", "کوڈ", "او ٹی پی", "پاسورڈ"]
-    urgency_words = ["police", "arrest", "jail", "block", "freeze", "band", "fauran", "jaldi", "10 minute", "5 minute", "بلاک", "پولیس", "گرفتار"]
-    money_words = ["transfer", "bhejo", "jazzcash", "easypaisa", "wire", "rupay", "paise", "پیسے", "ٹرانسفر"]
+    # 2. Highly specific and fine-grained offline matcher
+    
+    # Category A: Credential / OTP / PIN / Code
+    if any(w in lower for w in ["otp", "code", "pin", "cvv", "password", "6 digit", "six digit", "کوڈ", "او ٹی پی", "پاسورڈ"]):
+        if lang == "urdu_script":
+            return "لیکن بھائی جان! بینک کے ایس ایم ایس میں لکھا ہے کہ او ٹی پی کسی کو نہ دیں۔ آپ مجھ سے کوڈ کیوں مانگ رہے ہیں؟"
+        elif lang == "roman_urdu":
+            return "Lekin beta! SMS me to saaf likha hai ke 6-digit OTP code kisi se share na karein. Main kaisay de doon?"
+        else:
+            return "Wait! My bank SMS strictly says never share this OTP code with anyone over phone."
 
-    is_otp = any(w in lower for w in otp_words)
-    is_urgency = any(w in lower for w in urgency_words)
-    is_money = any(w in lower for w in money_words)
+    # Category B: Account Block / Freeze / Suspension (Specifically addresses user's query!)
+    if any(w in lower for w in ["block", "freeze", "band", "suspend", "deactivate", "khata", "بلاک", "بند"]):
+        if lang == "urdu_script":
+            return "ارے بیٹا! میرا اکاؤنٹ کیوں بند ہو رہا ہے؟ میں نے تو کوئی غلطی نہیں کی، مجھے بتائیں میں کیا کروں؟"
+        elif lang == "roman_urdu":
+            return "Arey beta mera account kyun block hoga? Main ne to subah hi use kiya tha, koi ghalti nahi ki! Main kya karoon?"
+        else:
+            return "Wait, why is my account being blocked? I haven't done anything wrong! What seems to be the issue?"
 
+    # Category C: Police / Arrest / Jail / Legal Threat / Raid
+    if any(w in lower for w in ["police", "arrest", "jail", "raid", "fir", "thana", "court", "قید", "گرفتار", "پولیس"]):
+        if lang == "urdu_script":
+            return "ارے بھائی خدا کا خوف کریں، پولیس کیوں آئے گی میرے گھر؟ میں ایک شریف آدمی ہوں۔ میں نے کیا کیا ہے؟"
+        elif lang == "roman_urdu":
+            return "Arey bhai police kyun ayegi mere ghar? Khuda ka khauf karein, main shareef buzoorg aadmi hoon!"
+        else:
+            return "Why are you threatening me with police? I am a law-abiding citizen! Give me your official extension."
+
+    # Category D: Urgent Money Transfer / JazzCash / Easypaisa
+    if any(w in lower for w in ["transfer", "bhejo", "jazzcash", "easypaisa", "wire", "rupay", "paise", "bhej", "پیسے", "ٹرانسفر"]):
+        if lang == "urdu_script":
+            return "میں اتنی رقم انجان نمبر پر فوراً کیسے بھیج دوں؟ مجھے پہلے اپنے بیٹے سے پوچھنے دیں۔"
+        elif lang == "roman_urdu":
+            return "Beta main anjaan number pe foran paise kaisay bhej doon? Mujhay pehle apnay baitay Ali se mashwara karne dein."
+        else:
+            return "I cannot wire money to an unknown account right now. I need to consult my family first."
+
+    # Category E: Identity / Who are you? / Name inquiry
+    if any(w in lower for w in ["naam", "name", "who", "kahan", "kaun", "kon", "کون", "نام"]):
+        if lang == "urdu_script":
+            return "میرا نام طارق محمود ہے۔ لیکن بھائی آپ کون بول رہے ہیں اور کس برانچ سے ہیں؟"
+        elif lang == "roman_urdu":
+            return "Mera naam Tariq Mahmood hai beta. Lekin aap kon baat kar rahe hain aur kis bank se hain?"
+        else:
+            return "My name is Tariq Mahmood. May I ask who is calling and which department you represent?"
+
+    # Category F: State Bank / Official Authority Claim
+    if any(w in lower for w in ["state bank", "sbp", "manager", "head office", "officer", "اسٹیٹ بینک"]):
+        if lang == "urdu_script":
+            return "جی وعلیکم السلام، اسٹیٹ بینک سے؟ جی فرمائیں، میرے اکاؤنٹ کا کیا مسئلہ ہے؟"
+        elif lang == "roman_urdu":
+            return "Ji Walaikum Assalam, State Bank se? Ji batayein beta, mere account ka kya masla bana hai?"
+        else:
+            return "State Bank? Yes, please tell me what is the issue regarding my account?"
+
+    # Category G: Secrecy demand
+    if any(w in lower for w in ["mat batana", "secret", "kisi ko", "chup", "don't tell", "کسی کو نہ بتانا"]):
+        if lang == "urdu_script":
+            return "میں اپنے گھر والوں سے بات کیوں نہ کروں؟ یہ تو بڑی عجیب اور مشکوک بات ہے۔"
+        elif lang == "roman_urdu":
+            return "Main apnay ghar walon se kyun chupaon? Yeh to mashkook baat lag rahi hai mujhay."
+        else:
+            return "Why shouldn't I inform my family? That sounds very suspicious to me."
+
+    # Default General Greeting / Question
     if lang == "urdu_script":
-        if is_otp:
-            return "لیکن بھائی جان! بینک کے ایس ایم ایس میں صاف لکھا ہے کہ اپنا او ٹی پی کوڈ کسی کو نہ بتائیں۔ آپ مجھے ہیلپ لائن سے کال کیوں نہیں کرتے؟"
-        elif is_urgency:
-            return "ارے بھائی خدا کا واسطہ ہے، پولیس کو مت بھیجیں! میں ایک شریف آدمی ہوں۔ مجھے بتائیں اصل مسئلہ کیا ہے؟"
-        elif is_money:
-            return "میرے پاس تو اتنی رقم نہیں ہے بھائی۔ کیا میں صبح بینک کی برانچ جا کر معلوم کر سکتا ہوں؟"
-        else:
-            return "وعلیکم السلام بھائی! خیریت تو ہے؟ آپ کون بول رہے ہیں اور میرے اکاؤنٹ کو کیا ہوا ہے؟"
-
+        return "وعلیکم السلام بھائی! خیریت تو ہے؟ آپ کس سلسلے میں بات کر رہے ہیں؟"
     elif lang == "roman_urdu":
-        if is_otp:
-            return "Lekin beta! SMS me to saaf likha hai ke 6-digit OTP code kisi se share mat karein. Aap waqai State Bank se bol rahe hain?"
-        elif is_urgency:
-            return "Arey bhai police kyun ayegi mere ghar? Khuda ka khauf karein, main buzoorg aadmi hoon, meri tabiat kharab ho rahi hai!"
-        elif is_money:
-            return "Beta main itni bari raqam foran kaisay bhej doon? Mujhay pehle apnay baitay Ali se mashwara karne dein."
-        else:
-            return "Walaikum Assalam beta! Khairiyat? Aap kon baat kar rahe hain aur mera account kyun block hoga?"
-
-    else: # English
-        if is_otp:
-            return "Wait a minute! My bank SMS strictly says never share this 6-digit code with anyone over phone. Who are you?"
-        elif is_urgency:
-            return "Please do not threaten me with arrest! I am an honest citizen. Give me your official bank extension number."
-        elif is_money:
-            return "I cannot wire funds to a personal wallet. I will visit my local branch tomorrow morning."
-        else:
-            return "Hello? Who is this speaking, and why are you claiming my bank account is in jeopardy?"
+        return "Walaikum Assalam beta! Khairiyat? Aap kis silsilay me baat kar rahe hain?"
+    else:
+        return "Hello? Who is speaking and how can I help you today?"
 
 def evaluate_scammer_tactics(history: List[CallTurn], latest_user_text: str) -> Dict[str, Any]:
     full_text = " ".join([t.text for t in history if t.speaker == "scammer"] + [latest_user_text]).lower()
