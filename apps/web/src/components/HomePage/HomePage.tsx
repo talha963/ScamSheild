@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import heroVideo from '../../assets/hero.mp4';
 import {
   ShieldAlert,
   Radio,
@@ -143,35 +144,41 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateTab }) => {
             </div>
           </div>
 
-          {/* Right Hero Image Card */}
+          {/* Right Hero Video Card */}
           <div className="lg:col-span-5 relative">
             <div className="relative rounded-2xl overflow-hidden border border-cyan-500/40 shadow-2xl glow-cyan group">
-              <img
-                src="/hero-shield.jpg"
-                alt="ScamShield Live Cyber Shield"
+              <video
+                src={heroVideo}
+                aria-label="ScamShield Live Cyber Shield"
+                autoPlay
+                loop
+                muted
+                playsInline
                 className="w-full h-80 sm:h-96 object-cover object-center group-hover:scale-105 transition-transform duration-700"
-              />
+              >
+                Your browser does not support the video element.
+              </video>
 
               {/* Friendly Floating Badge */}
-              <div className="absolute top-4 left-4 right-4 flex items-center justify-between p-3 rounded-xl bg-slate-950/85 backdrop-blur-md border border-slate-700 text-xs text-white">
+              <div className="absolute top-4 left-4 right-4 flex items-center justify-between p-3 rounded-xl bg-slate-950/35 backdrop-blur-md border border-white/10 text-xs text-white shadow-lg shadow-cyan-950/20">
                 <div className="flex items-center gap-2">
                   <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping" />
-                  <span className="font-bold text-emerald-300">GUARDIAN ACTIVE</span>
+                  <span className="font-bold text-emerald-200/80">GUARDIAN ACTIVE</span>
                 </div>
-                <span className="text-slate-300 font-medium">Protecting Your Savings</span>
+                <span className="text-slate-100/60 font-medium">Protecting Your Savings</span>
               </div>
 
               {/* Bottom Live Alert Floating Card */}
-              <div className="absolute bottom-4 left-4 right-4 p-4 rounded-xl bg-slate-950/90 backdrop-blur-md border border-rose-500/70 shadow-xl">
+              <div className="absolute bottom-4 left-4 right-4 p-4 rounded-xl bg-slate-950/45 backdrop-blur-md border border-rose-500/40 shadow-xl shadow-rose-950/20">
                 <div className="flex items-center justify-between text-xs mb-1">
-                  <span className="font-black text-rose-400 flex items-center gap-1.5">
+                  <span className="font-black text-rose-200/80 flex items-center gap-1.5">
                     <ShieldAlert className="w-4 h-4" /> SCAM STOPPED BEFORE TRANSFER
                   </span>
-                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-500/20 text-rose-300">
+                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-500/15 text-rose-200/80 border border-rose-300/30">
                     PROTECTED
                   </span>
                 </div>
-                <p className="text-xs text-slate-200 mt-1">
+                <p className="text-xs text-slate-100/75 mt-1">
                   Someone asked for your secret OTP code. Outgoing transfer of <strong>Rs. 85,000</strong> has been safely frozen.
                 </p>
               </div>
