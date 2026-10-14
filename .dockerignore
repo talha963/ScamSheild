@@ -8,6 +8,7 @@ env/
 venv/
 .venv/
 .git
+.env
 .gitignore
 dist/
 .DS_Store

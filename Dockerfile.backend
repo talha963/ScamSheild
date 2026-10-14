@@ -26,7 +26,6 @@ COPY services/ ./services/
 COPY apps/mock_bank/ ./apps/mock_bank/
 COPY ml/ ./ml/
 COPY infra/ ./infra/
-COPY .env ./
 COPY run_system.py ./
 
 EXPOSE 8000

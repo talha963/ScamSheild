@@ -33,13 +33,16 @@ services:
       dockerfile: Dockerfile.backend
     ports:
       - "8000:8000"
-    env_file:
-      - .env
     environment:
-      - HOST=0.0.0.0
-      - PORT=8000
-      - DATABASE_URL=postgresql://scamshield:scamshield_secure_pass@scamshield-db:5432/scamshield
-      - DEMO_MODE=true
+      HOST: 0.0.0.0
+      PORT: 8000
+      DEMO_MODE: ${DEMO_MODE:-true}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GEMINI_MODEL_LIVE: ${GEMINI_MODEL_LIVE:-gemini-2.5-flash}
+      GEMINI_MODEL_REASONING: ${GEMINI_MODEL_REASONING:-gemini-2.5-pro}
+      PINECONE_API_KEY: ${PINECONE_API_KEY:-}
+      PINECONE_INDEX_NAME: ${PINECONE_INDEX_NAME:-scamshield-radar}
+      DATABASE_URL: "postgresql://scamshield:${POSTGRES_PASSWORD:-scamshield_secure_pass}@scamshield-db:5432/scamshield"
     depends_on:
       scamshield-db:
         condition: service_healthy
@@ -81,9 +84,9 @@ services:
     ports:
       - "5432:5432"
     environment:
-      - POSTGRES_DB=scamshield
-      - POSTGRES_USER=scamshield
-      - POSTGRES_PASSWORD=scamshield_secure_pass
+      POSTGRES_DB: scamshield
+      POSTGRES_USER: scamshield
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-scamshield_secure_pass}
     volumes:
       - db_storage:/var/lib/postgresql/data
       - ./infra/init_db.sql:/docker-entrypoint-initdb.d/init_db.sql:ro

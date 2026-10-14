@@ -10,8 +10,8 @@ FROM node:20-alpine AS frontend-builder
 WORKDIR /build
 
 # Copy web package specifications
-COPY apps/web/package*.json ./
-RUN npm install
+COPY apps/web/package.json apps/web/package-lock.json ./
+RUN npm ci
 
 # Copy web source code and compile production assets
 COPY apps/web/ ./
