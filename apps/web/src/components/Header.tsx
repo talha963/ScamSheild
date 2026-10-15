@@ -24,6 +24,7 @@ import {
 export type ActiveTab =
   | 'home'
   | 'call-guard'
+  | 'live-call-guard'
   | 'mock-bank'
   | 'scam-lens'
   | 'scam-gym'
@@ -49,8 +50,15 @@ export const Header: React.FC<HeaderProps> = ({
   const [toolsDropdownOpen, setToolsDropdownOpen] = useState(false);
   const [languageMode, setLanguageMode] = useState<'ur' | 'en'>('ur');
 
-  // User requested: for now when clicking try demo, only scam call feature is shown
+  // Interactive Safety Simulators
   const interactiveTools: { id: ActiveTab; name: string; desc: string; icon: React.ReactNode; color: string }[] = [
+    {
+      id: 'live-call-guard',
+      name: 'Mobile Live Call Guardian (Stealth)',
+      desc: 'Secret background call listener & cut-call alert on mobile phone',
+      icon: <Smartphone className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />,
+      color: 'emerald',
+    },
     {
       id: 'call-guard',
       name: 'Scam Call Simulator (Role-Play)',

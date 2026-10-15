@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="16dp"
+    android:layout_margin="12dp"
+    android:background="#DC2626"
+    android:elevation="12dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
+
+        <TextView
+            android:id="@+id/tvAlertIcon"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="🚨"
+            android:textSize="24sp"
+            android:layout_marginEnd="8dp" />
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/tvAlertTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="CUT THE CALL! THIS IS A SCAMMER"
+                android:textColor="#FFFFFF"
+                android:textStyle="bold"
+                android:textSize="14sp" />
+
+            <TextView
+                android:id="@+id/tvAlertUrdu"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="فوراً کال کاٹ دیں! دوسری طرف بات کرنے والا فراڈیا ہے!"
+                android:textColor="#FEE2E2"
+                android:textSize="12sp"
+                android:layout_marginTop="2dp" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="🔒 Stealth Alert: Opponent cannot hear or see this warning"
+        android:textColor="#FEF08A"
+        android:textSize="10sp"
+        android:textStyle="bold"
+        android:layout_marginTop="6dp" />
+
+    <Button
+        android:id="@+id/btnCutCall"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:text="🔴 CUT CALL (HANG UP)"
+        android:textColor="#DC2626"
+        android:background="#FFFFFF"
+        android:textStyle="bold"
+        android:textSize="13sp"
+        android:layout_marginTop="10dp" />
+
+</LinearLayout>

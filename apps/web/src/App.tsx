@@ -4,6 +4,7 @@ import { Footer } from './components/Footer';
 import { HomePage } from './components/HomePage/HomePage';
 import { CallCompanion } from './components/CallCompanion/CallCompanion';
 import { ScamCallDemo } from './components/ScamCallDemo/ScamCallDemo';
+import { LiveCallGuard } from './components/LiveCallGuard/LiveCallGuard';
 import { MockBank } from './components/MockBank/MockBank';
 import { ScamLens } from './components/ScamLens/ScamLens';
 import { ScamGym } from './components/ScamGym/ScamGym';
@@ -115,6 +116,11 @@ export function App() {
             {/* Active Interactive Component: Scam Call Role-Play Simulator */}
             {activeTab === 'call-guard' && (
               <ScamCallDemo />
+            )}
+
+            {/* Live Mobile Phone Call Guardian (Background Stealth Interceptor) */}
+            {activeTab === 'live-call-guard' && (
+              <LiveCallGuard />
             )}
 
             {activeTab === 'mock-bank' && (
