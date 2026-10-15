@@ -363,31 +363,31 @@ export const LiveCallGuard: React.FC = () => {
               </div>
 
               <div className="space-y-2 text-xs text-slate-600 dark:text-slate-400">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col items-start gap-0.5 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
                   <span>Silent Background Audio Listener:</span>
                   <span className="font-bold text-emerald-600 dark:text-emerald-400">
                     {guardActive ? 'Enabled (Active)' : 'Disabled'}
                   </span>
                 </div>
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col items-start gap-0.5 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
                   <span>Stealth Mode (Zero audio cues to caller):</span>
                   <span className="font-bold text-emerald-600 dark:text-emerald-400">
                     Active (Muted Audio Alerts)
                   </span>
                 </div>
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col items-start gap-0.5 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
                   <span>Physical Vibration Pattern:</span>
                   <span className="font-bold text-slate-900 dark:text-white">
                     Secret Haptic SOS Pulse
                   </span>
                 </div>
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between gap-3">
                   <span>Simulate Banking App Open (Higher Sensitivity):</span>
                   <input
                     type="checkbox"
                     checked={bankingAppOpen}
                     onChange={(e) => setBankingAppOpen(e.target.checked)}
-                    className="rounded text-blue-600 focus:ring-0 cursor-pointer"
+                    className="rounded text-blue-600 focus:ring-0 cursor-pointer shrink-0"
                   />
                 </div>
               </div>
@@ -516,9 +516,9 @@ export const LiveCallGuard: React.FC = () => {
           </div>
 
           {/* RIGHT COLUMN: HIGH-FIDELITY ANDROID PHONE MOCKUP */}
-          <div className="lg:col-span-6 flex justify-center">
+          <div className="lg:col-span-6 flex justify-center w-full min-w-0">
             <div
-              className={`w-[340px] sm:w-[370px] h-[680px] rounded-[48px] bg-slate-950 border-[10px] border-slate-900 shadow-2xl relative overflow-hidden flex flex-col transition-all duration-300 ${
+              className={`w-full max-w-[340px] sm:max-w-[370px] h-[640px] sm:h-[680px] rounded-[40px] sm:rounded-[48px] bg-slate-950 border-[8px] sm:border-[10px] border-slate-900 shadow-2xl relative overflow-hidden flex flex-col transition-all duration-300 ${
                 vibrationActive ? 'animate-[shake_0.5s_infinite] ring-4 ring-rose-500' : ''
               }`}
             >

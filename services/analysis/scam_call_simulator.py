@@ -531,6 +531,12 @@ Uncle Tariq:"""
     else:
         return "Look, I do not feel comfortable discussing this over an informal phone call. Please send an official written notice."
 
+def _keyword_in(keyword: str, text: str) -> bool:
+    # Whole-word match for Latin keywords so "pin" doesn't fire on "shopping" or "band" on "husband"
+    if keyword.isascii():
+        return re.search(rf"(?<![a-z0-9]){re.escape(keyword)}(?![a-z0-9])", text) is not None
+    return keyword in text
+
 def evaluate_scammer_tactics(history: List[CallTurn], latest_user_text: str) -> Dict[str, Any]:
     full_text = " ".join([t.text for t in history if t.speaker == "scammer"] + [latest_user_text]).lower()
 
@@ -545,7 +551,7 @@ def evaluate_scammer_tactics(history: List[CallTurn], latest_user_text: str) -> 
         "hbl", "meezan", "ubl", "court", "اسٹیٹ بینک", "پولیس", "ایف آئی اے"
     ]
     for k in authority_keywords:
-        if k in full_text:
+        if _keyword_in(k, full_text):
             detected_tactics.append("Authority Impersonation")
             evidence_phrases.append(f"Claimed official status: '{k}'")
             score += 25
@@ -558,7 +564,7 @@ def evaluate_scammer_tactics(history: List[CallTurn], latest_user_text: str) -> 
         "بلاک", "فوری", "گرفتار"
     ]
     for k in urgency_keywords:
-        if k in full_text:
+        if _keyword_in(k, full_text):
             detected_tactics.append("Manufactured Urgency")
             evidence_phrases.append(f"Imposed deadline/threat: '{k}'")
             score += 25
@@ -570,7 +576,7 @@ def evaluate_scammer_tactics(history: List[CallTurn], latest_user_text: str) -> 
         "call mat katna", "chup", "don't hang up", "line pe raho", "کسی کو نہ بتانا"
     ]
     for k in secrecy_keywords:
-        if k in full_text:
+        if _keyword_in(k, full_text):
             detected_tactics.append("Secrecy & Isolation")
             evidence_phrases.append(f"Demanded secrecy: '{k}'")
             score += 20
@@ -582,7 +588,7 @@ def evaluate_scammer_tactics(history: List[CallTurn], latest_user_text: str) -> 
         "او ٹی پی", "کوڈ", "پاسورڈ"
     ]
     for k in credential_keywords:
-        if k in full_text:
+        if _keyword_in(k, full_text):
             detected_tactics.append("Credential & OTP Extraction")
             evidence_phrases.append(f"Demanded secret code: '{k}'")
             score += 40
@@ -594,7 +600,7 @@ def evaluate_scammer_tactics(history: List[CallTurn], latest_user_text: str) -> 
         "anydesk", "teamviewer", "download", "link", "ٹرانسفر", "پیسے"
     ]
     for k in payment_keywords:
-        if k in full_text:
+        if _keyword_in(k, full_text):
             detected_tactics.append("Payment Redirection / Remote Tool")
             evidence_phrases.append(f"Directed money movement/app: '{k}'")
             score += 25

@@ -38,8 +38,8 @@ services:
       PORT: 8000
       DEMO_MODE: ${DEMO_MODE:-true}
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
-      GEMINI_MODEL_LIVE: ${GEMINI_MODEL_LIVE:-gemini-2.5-flash}
-      GEMINI_MODEL_REASONING: ${GEMINI_MODEL_REASONING:-gemini-2.5-pro}
+      GEMINI_MODEL_LIVE: ${GEMINI_MODEL_LIVE:-gemini-3.8-flash}
+      GEMINI_MODEL_REASONING: ${GEMINI_MODEL_REASONING:-gemini-pro-latest}
       PINECONE_API_KEY: ${PINECONE_API_KEY:-}
       PINECONE_INDEX_NAME: ${PINECONE_INDEX_NAME:-scamshield-radar}
       DATABASE_URL: "postgresql://scamshield:${POSTGRES_PASSWORD:-scamshield_secure_pass}@scamshield-db:5432/scamshield"

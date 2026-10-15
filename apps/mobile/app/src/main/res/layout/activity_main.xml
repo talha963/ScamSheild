@@ -2,26 +2,28 @@
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#F8FAFC"
-    android:padding="20dp">
+    android:background="#F1F5F9"
+    android:fillViewport="true"
+    android:padding="16dp">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical">
 
+        <!-- Brand -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:gravity="center_vertical"
-            android:layout_marginBottom="20dp">
+            android:layout_marginBottom="16dp">
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="🛡️"
-                android:textSize="32sp"
+            <ImageView
+                android:layout_width="44dp"
+                android:layout_height="44dp"
+                android:src="@mipmap/ic_launcher"
+                android:contentDescription="ScamShield"
                 android:layout_marginEnd="12dp" />
 
             <LinearLayout
@@ -32,29 +34,41 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="ScamShield Live"
+                    android:text="ScamShield"
                     android:textColor="#0F172A"
-                    android:textSize="20sp"
+                    android:textSize="22sp"
                     android:textStyle="bold" />
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Silent Phone Call Guardian"
+                    android:text="Phone call protection"
                     android:textColor="#64748B"
                     android:textSize="12sp" />
             </LinearLayout>
         </LinearLayout>
 
-        <!-- Guardian Toggle Card -->
+        <!-- Readiness banner -->
+        <TextView
+            android:id="@+id/tvReadiness"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Checking…"
+            android:textColor="#059669"
+            android:textSize="15sp"
+            android:textStyle="bold"
+            android:background="#FFFFFF"
+            android:padding="14dp"
+            android:layout_marginBottom="12dp" />
+
+        <!-- Main switch -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
             android:background="#FFFFFF"
             android:padding="16dp"
-            android:elevation="2dp"
-            android:layout_marginBottom="16dp">
+            android:layout_marginBottom="12dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -66,9 +80,9 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="Enable Call Guardian"
+                    android:text="Protect my calls"
                     android:textColor="#0F172A"
-                    android:textSize="15sp"
+                    android:textSize="16sp"
                     android:textStyle="bold" />
 
                 <Switch
@@ -78,71 +92,163 @@
                     android:checked="true" />
             </LinearLayout>
 
-            <TextView
-                android:id="@+id/tvStatus"
+            <CheckBox
+                android:id="@+id/cbBankingApp"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="🛡️ ScamShield Active • Silently monitoring incoming unknown calls."
-                android:textColor="#059669"
+                android:text="I also use my banking app (warn me sooner)"
+                android:textColor="#334155"
                 android:textSize="12sp"
-                android:layout_marginTop="8dp" />
+                android:layout_marginTop="6dp" />
         </LinearLayout>
 
-        <!-- Server API Configuration -->
+        <!-- Readiness checklist -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
             android:background="#FFFFFF"
             android:padding="16dp"
-            android:elevation="2dp"
-            android:layout_marginBottom="16dp">
+            android:layout_marginBottom="12dp">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Permissions this phone needs"
+                android:textColor="#0F172A"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+
+            <LinearLayout
+                android:id="@+id/checklist"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:layout_marginTop="4dp" />
+
+            <Button
+                android:id="@+id/btnRecheck"
+                android:layout_width="match_parent"
+                android:layout_height="44dp"
+                android:text="Check again"
+                android:textColor="#1E293B"
+                android:background="#E2E8F0"
+                android:layout_marginTop="8dp" />
+        </LinearLayout>
+
+        <!-- Server -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="#FFFFFF"
+            android:padding="16dp"
+            android:layout_marginBottom="12dp">
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="ScamShield Backend Server URL:"
+                android:text="ScamShield server address"
                 android:textColor="#0F172A"
-                android:textSize="13sp"
+                android:textSize="14sp"
                 android:textStyle="bold" />
 
             <EditText
                 android:id="@+id/etServerUrl"
                 android:layout_width="match_parent"
                 android:layout_height="48dp"
-                android:text="http://192.168.100.109:8000"
+                android:hint="https://your-scamshield-server"
                 android:textColor="#0F172A"
                 android:textSize="13sp"
                 android:inputType="textUri"
+                android:importantForAutofill="no"
                 android:layout_marginTop="6dp" />
 
-            <Button
-                android:id="@+id/btnSaveSettings"
+            <TextView
                 android:layout_width="match_parent"
-                android:layout_height="44dp"
-                android:text="Save & Test Connection"
-                android:textColor="#FFFFFF"
-                android:background="#2563EB"
-                android:layout_marginTop="10dp" />
+                android:layout_height="wrap_content"
+                android:text="Use the address you were given. Testing on your own Wi-Fi instead? Use your computer's IP, e.g. http://192.168.1.10:8000"
+                android:textColor="#64748B"
+                android:textSize="11sp"
+                android:layout_marginTop="4dp" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginTop="10dp">
+
+                <Button
+                    android:id="@+id/btnSaveSettings"
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:layout_height="46dp"
+                    android:text="Save and test"
+                    android:textColor="#FFFFFF"
+                    android:background="#2563EB" />
+
+                <ProgressBar
+                    android:id="@+id/progress"
+                    android:layout_width="28dp"
+                    android:layout_height="28dp"
+                    android:visibility="gone"
+                    android:layout_marginStart="12dp" />
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/tvStatus"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text=""
+                android:textColor="#475569"
+                android:textSize="12sp"
+                android:layout_marginTop="8dp" />
         </LinearLayout>
 
-        <!-- Feature Explanations -->
-        <TextView
+        <!-- How it works -->
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="How ScamShield Protects You:"
-            android:textColor="#334155"
-            android:textSize="13sp"
-            android:textStyle="bold"
-            android:layout_marginBottom="8dp" />
+            android:orientation="vertical"
+            android:background="#FFFFFF"
+            android:padding="16dp">
 
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="1. When you receive an unknown call, ScamShield secretly listens in the background.\n2. It only analyzes the opponent's speech.\n3. If it detects fraud, your phone vibrates and shows a red 'Cut Call' button.\n4. The opponent hears NOTHING."
-            android:textColor="#64748B"
-            android:textSize="12sp"
-            android:lineSpacingExtra="4dp" />
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="How it works"
+                android:textColor="#0F172A"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="6dp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="1. Answer a call as usual.\n2. ScamShield listens and judges only what the OTHER person says.\n3. If it hears scam tactics, your phone vibrates and a red CUT CALL button appears.\n4. Nothing is played into the call, so the caller never knows."
+                android:textColor="#475569"
+                android:textSize="12sp"
+                android:lineSpacingExtra="4dp"
+                android:layout_marginBottom="12dp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Important"
+                android:textColor="#0F172A"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="4dp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Android does not let apps read call audio directly, so ScamShield listens through the microphone and turns on the speakerphone when a call starts. On some phones the manufacturer mutes the microphone during calls — if that happens ScamShield will tell you instead of staying silent. Recording a call may require the other person's consent where you live."
+                android:textColor="#64748B"
+                android:textSize="11sp"
+                android:lineSpacingExtra="3dp" />
+        </LinearLayout>
 
     </LinearLayout>
 </ScrollView>

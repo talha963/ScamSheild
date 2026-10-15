@@ -3,9 +3,11 @@ package com.scamshield.guardian
 import android.app.Service
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.graphics.PixelFormat
 import android.os.Build
 import android.os.IBinder
+import android.provider.Settings
 import android.telecom.TelecomManager
 import android.util.Log
 import android.view.Gravity
@@ -14,18 +16,16 @@ import android.view.View
 import android.view.WindowManager
 import android.widget.Button
 import android.widget.TextView
+import androidx.core.content.ContextCompat
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import org.json.JSONObject
-import java.io.OutputStreamWriter
-import java.net.HttpURLConnection
-import java.net.URL
 
 /**
- * Stealth Floating Overlay Service
- * Renders a discreet heads-up warning banner over the native call screen
- * allowing the user to hang up / cut the call immediately with one tap.
+ * Draws the warning over the call screen with a one-tap "Cut Call" button.
+ *
+ * The banner is visual only. Nothing is played into the call audio, so the person on the
+ * other end gets no cue that the user has been warned.
  */
 class StealthOverlayService : Service() {
 
@@ -35,19 +35,32 @@ class StealthOverlayService : Service() {
 
     private var windowManager: WindowManager? = null
     private var overlayView: View? = null
+    private var sessionId: String = ""
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        val sessionId = intent?.getStringExtra("session_id") ?: ""
-        val alertTitle = intent?.getStringExtra("alert_title") ?: "🚨 CUT THE CALL! THIS IS A SCAMMER"
-        val alertUrdu = intent?.getStringExtra("alert_urdu") ?: "فوراً کال کاٹ دیں! دوسری طرف بات کرنے والا فراڈیا ہے"
+        sessionId = intent?.getStringExtra("session_id") ?: ""
+        val title = intent?.getStringExtra("alert_title") ?: "CUT THE CALL! THIS IS A SCAMMER"
+        val urdu = intent?.getStringExtra("alert_urdu")
+            ?: "فوراً کال کاٹ دیں! دوسری طرف بات کرنے والا فراڈیا ہے"
+        val evidence = intent?.getStringExtra("evidence").orEmpty()
+        // "warning" = an app problem to report (amber, no hang-up); default = a scam alert (red)
+        val isWarning = intent?.getStringExtra("mode") == "warning"
 
-        showStealthBanner(sessionId, alertTitle, alertUrdu)
+        if (!canDrawOverlay()) {
+            Log.w(TAG, "Overlay permission missing; cannot show the warning banner.")
+            stopSelf()
+            return START_NOT_STICKY
+        }
+
+        showBanner(title, urdu, evidence, isWarning)
         return START_NOT_STICKY
     }
 
-    private fun showStealthBanner(sessionId: String, title: String, urdu: String) {
-        if (overlayView != null) return
+    private fun canDrawOverlay(): Boolean =
+        Build.VERSION.SDK_INT < Build.VERSION_CODES.M || Settings.canDrawOverlays(this)
 
+    private fun showBanner(title: String, urdu: String, evidence: String, isWarning: Boolean) {
+        if (overlayView != null) return
         windowManager = getSystemService(Context.WINDOW_SERVICE) as WindowManager
 
         val layoutFlag = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -61,7 +74,8 @@ class StealthOverlayService : Service() {
             WindowManager.LayoutParams.MATCH_PARENT,
             WindowManager.LayoutParams.WRAP_CONTENT,
             layoutFlag,
-            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
+            // Focusable so the buttons receive taps, but it never steals the call's audio
+            WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
             PixelFormat.TRANSLUCENT
         ).apply {
             gravity = Gravity.TOP or Gravity.CENTER_HORIZONTAL
@@ -69,74 +83,76 @@ class StealthOverlayService : Service() {
         }
 
         val inflater = getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater
-        overlayView = inflater.inflate(R.layout.stealth_alert_overlay, null)
+        val view = inflater.inflate(R.layout.stealth_alert_overlay, null)
 
-        overlayView?.findViewById<TextView>(R.id.tvAlertTitle)?.text = title
-        overlayView?.findViewById<TextView>(R.id.tvAlertUrdu)?.text = urdu
+        view.findViewById<TextView>(R.id.tvAlertTitle)?.text = title
+        view.findViewById<TextView>(R.id.tvAlertUrdu)?.apply {
+            if (urdu.isBlank()) visibility = View.GONE else text = urdu
+        }
+        view.findViewById<TextView>(R.id.tvEvidence)?.apply {
+            if (evidence.isBlank()) visibility = View.GONE else text = evidence
+        }
 
-        // Cut Call Button
-        overlayView?.findViewById<Button>(R.id.btnCutCall)?.setOnClickListener {
-            Log.i(TAG, "User tapped CUT CALL. Hanging up phone call immediately...")
+        if (isWarning) {
+            // A problem report, not a scam alert: amber, and no "cut the call" advice.
+            view.setBackgroundColor(0xFFB45309.toInt())
+            view.findViewById<TextView>(R.id.tvStealthNote)?.visibility = View.GONE
+            view.findViewById<Button>(R.id.btnCutCall)?.visibility = View.GONE
+            view.findViewById<Button>(R.id.btnDismiss)?.text = "Got it"
+        }
+
+        view.findViewById<Button>(R.id.btnCutCall)?.setOnClickListener {
+            Log.i(TAG, "User chose to cut the call.")
             hangUpCall()
-            notifyBackendCutCall(sessionId)
+            CoroutineScope(Dispatchers.IO).launch {
+                GuardianApi.notifyCutCall(this@StealthOverlayService, sessionId)
+            }
             removeOverlay()
             stopSelf()
         }
 
+        view.findViewById<Button>(R.id.btnDismiss)?.setOnClickListener {
+            removeOverlay()
+            stopSelf()
+        }
+
+        overlayView = view
         try {
-            windowManager?.addView(overlayView, params)
-            Log.i(TAG, "Stealth alert overlay rendered on screen.")
+            windowManager?.addView(view, params)
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to render overlay: ${e.message}")
+            Log.e(TAG, "Could not show the banner: ${e.message}")
+            overlayView = null
+            stopSelf()
         }
     }
 
     private fun hangUpCall() {
-        try {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                val telecomManager = getSystemService(Context.TELECOM_SERVICE) as TelecomManager
-                telecomManager.endCall()
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "Could not end call via TelecomManager: ${e.message}")
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P) {
+            Log.w(TAG, "Ending a call programmatically needs Android 9 or newer.")
+            return
         }
-    }
-
-    private fun notifyBackendCutCall(sessionId: String) {
-        CoroutineScope(Dispatchers.IO).launch {
-            try {
-                val prefs = getSharedPreferences("scamshield_prefs", Context.MODE_PRIVATE)
-                val serverBaseUrl = prefs.getString("server_url", "http://192.168.100.109:8000") ?: "http://192.168.100.109:8000"
-
-                val cutUrl = URL("$serverBaseUrl/v1/live/guardian/cut-call")
-                val conn = cutUrl.openConnection() as HttpURLConnection
-                conn.requestMethod = "POST"
-                conn.setRequestProperty("Content-Type", "application/json")
-                conn.doOutput = true
-
-                val payload = JSONObject().apply {
-                    put("session_id", sessionId)
-                    put("reason", "User cut call via ScamShield stealth overlay button")
-                }
-
-                OutputStreamWriter(conn.outputStream).use { it.write(payload.toString()) }
-                val code = conn.responseCode
-                Log.i(TAG, "Backend cut-call notified. Response code: $code")
-            } catch (e: Exception) {
-                Log.e(TAG, "Error notifying backend of cut call: ${e.message}")
-            }
+        if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.ANSWER_PHONE_CALLS)
+            != PackageManager.PERMISSION_GRANTED
+        ) {
+            Log.w(TAG, "ANSWER_PHONE_CALLS not granted; the user must hang up manually.")
+            return
+        }
+        try {
+            @Suppress("DEPRECATION")
+            (getSystemService(Context.TELECOM_SERVICE) as TelecomManager).endCall()
+        } catch (e: Exception) {
+            Log.e(TAG, "Could not end the call: ${e.message}")
         }
     }
 
     private fun removeOverlay() {
-        if (overlayView != null && windowManager != null) {
-            try {
-                windowManager?.removeView(overlayView)
-                overlayView = null
-            } catch (e: Exception) {
-                Log.e(TAG, "Error removing overlay: ${e.message}")
-            }
+        val view = overlayView ?: return
+        try {
+            windowManager?.removeView(view)
+        } catch (e: Exception) {
+            Log.e(TAG, "Could not remove the banner: ${e.message}")
         }
+        overlayView = null
     }
 
     override fun onDestroy() {

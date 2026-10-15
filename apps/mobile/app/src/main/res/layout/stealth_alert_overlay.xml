@@ -30,42 +30,68 @@
 
             <TextView
                 android:id="@+id/tvAlertTitle"
-                android:layout_width="wrap_content"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="CUT THE CALL! THIS IS A SCAMMER"
                 android:textColor="#FFFFFF"
                 android:textStyle="bold"
-                android:textSize="14sp" />
+                android:textSize="15sp" />
 
             <TextView
                 android:id="@+id/tvAlertUrdu"
-                android:layout_width="wrap_content"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="فوراً کال کاٹ دیں! دوسری طرف بات کرنے والا فراڈیا ہے!"
                 android:textColor="#FEE2E2"
-                android:textSize="12sp"
+                android:textSize="13sp"
                 android:layout_marginTop="2dp" />
         </LinearLayout>
     </LinearLayout>
 
     <TextView
+        android:id="@+id/tvEvidence"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textColor="#FFE4E6"
+        android:textSize="11sp"
+        android:layout_marginTop="6dp" />
+
+    <TextView
+        android:id="@+id/tvStealthNote"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="🔒 Stealth Alert: Opponent cannot hear or see this warning"
+        android:text="🔒 The caller cannot hear or see this warning"
         android:textColor="#FEF08A"
         android:textSize="10sp"
         android:textStyle="bold"
         android:layout_marginTop="6dp" />
 
-    <Button
-        android:id="@+id/btnCutCall"
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="48dp"
-        android:text="🔴 CUT CALL (HANG UP)"
-        android:textColor="#DC2626"
-        android:background="#FFFFFF"
-        android:textStyle="bold"
-        android:textSize="13sp"
-        android:layout_marginTop="10dp" />
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginTop="10dp">
+
+        <Button
+            android:id="@+id/btnCutCall"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="48dp"
+            android:text="🔴 CUT CALL"
+            android:textColor="#DC2626"
+            android:background="#FFFFFF"
+            android:textStyle="bold"
+            android:textSize="13sp" />
+
+        <Button
+            android:id="@+id/btnDismiss"
+            android:layout_width="wrap_content"
+            android:layout_height="48dp"
+            android:text="Ignore"
+            android:textColor="#FFFFFF"
+            android:background="#B91C1C"
+            android:textSize="12sp"
+            android:layout_marginStart="8dp" />
+    </LinearLayout>
 
 </LinearLayout>

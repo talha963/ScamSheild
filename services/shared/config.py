@@ -10,8 +10,8 @@ load_dotenv(dotenv_path=env_path)
 class Settings:
     # Google Gemini GenAI Settings
     GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "")
-    GEMINI_MODEL_LIVE: str = os.getenv("GEMINI_MODEL_LIVE", "gemini-2.5-flash")
-    GEMINI_MODEL_REASONING: str = os.getenv("GEMINI_MODEL_REASONING", "gemini-2.5-pro")
+    GEMINI_MODEL_LIVE: str = os.getenv("GEMINI_MODEL_LIVE", "gemini-3.8-flash")
+    GEMINI_MODEL_REASONING: str = os.getenv("GEMINI_MODEL_REASONING", "gemini-pro-latest")
 
     # Pinecone Vector DB Settings
     PINECONE_API_KEY: str = os.getenv("PINECONE_API_KEY", "")

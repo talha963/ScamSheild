@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="ic_launcher_background">#0F172A</color>
+    <color name="scamshield_blue">#2563EB</color>
+    <color name="scamshield_danger">#DC2626</color>
+</resources>

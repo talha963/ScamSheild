@@ -138,14 +138,14 @@ export const MockBank: React.FC<MockBankProps> = ({
     <div className="space-y-6">
       {/* Top Banking Correlation Telemetry Bar */}
       <div className="glass-panel p-4 rounded-2xl border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-blue-500/20 border border-blue-500/40 flex items-center justify-center text-blue-400">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="w-10 h-10 shrink-0 rounded-xl bg-blue-500/20 border border-blue-500/40 flex items-center justify-center text-blue-400">
             <Building2 className="w-5 h-5" />
           </div>
-          <div>
-            <div className="flex items-center gap-2">
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
               <h2 className="text-sm font-bold text-white">ShieldPay Instant Banking SDK</h2>
-              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-blue-900/60 text-blue-300 border border-blue-800">
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-blue-900/60 text-blue-300 border border-blue-800 whitespace-nowrap">
                 Core Banking API v1.4
               </span>
             </div>
@@ -155,11 +155,11 @@ export const MockBank: React.FC<MockBankProps> = ({
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3 shrink-0">
           {isCallActive ? (
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-semibold animate-pulse">
-              <PhoneCall className="w-3.5 h-3.5" />
-              <span>ACTIVE CALL DETECTED</span>
+              <PhoneCall className="w-3.5 h-3.5 shrink-0" />
+              <span className="whitespace-nowrap">ACTIVE CALL DETECTED</span>
             </div>
           ) : (
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-800 text-slate-400 text-xs">
@@ -167,7 +167,7 @@ export const MockBank: React.FC<MockBankProps> = ({
             </div>
           )}
 
-          <div className="text-right">
+          <div className="text-left sm:text-right">
             <span className="text-[10px] uppercase font-bold text-slate-500 block">Current Friction Tier</span>
             <span className={`text-xs font-bold font-mono ${currentTier === 3 ? 'text-rose-400' : currentTier === 2 ? 'text-orange-400' : currentTier === 1 ? 'text-yellow-400' : 'text-emerald-400'}`}>
               TIER {currentTier} {currentTier === 3 ? '(HARD STOP)' : currentTier === 2 ? '(COOL OFF)' : currentTier === 1 ? '(WARN)' : '(SILENT)'}
@@ -198,14 +198,14 @@ export const MockBank: React.FC<MockBankProps> = ({
               </div>
             </div>
 
-            <div className="mt-6 pt-4 border-t border-slate-700/60 flex items-baseline justify-between">
-              <div>
+            <div className="mt-6 pt-4 border-t border-slate-700/60 flex flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between sm:gap-4">
+              <div className="min-w-0">
                 <span className="text-[11px] text-slate-400">Available Balance</span>
-                <div className="text-3xl font-black font-mono text-white tracking-tight">
+                <div className="text-2xl sm:text-3xl font-black font-mono text-white tracking-tight whitespace-nowrap">
                   Rs. {account.balance.toLocaleString()}
                 </div>
               </div>
-              <span className="text-xs font-mono text-cyan-400">Raast / IBFT Enabled</span>
+              <span className="text-xs font-mono text-cyan-400 shrink-0">Raast / IBFT Enabled</span>
             </div>
           </div>
 

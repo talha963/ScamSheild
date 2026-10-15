@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.scamshield.guardian">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <!-- Essential Android Telephony & Background Permissions -->
+    <!-- Telephony, microphone and background-service permissions -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.READ_PHONE_STATE" />
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
     <uses-permission android:name="android.permission.VIBRATE" />
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
@@ -15,15 +15,15 @@
     <uses-permission android:name="android.permission.ANSWER_PHONE_CALLS" />
 
     <application
-        android:allowBackup="true"
-        android:icon="@android:drawable/ic_lock_idle_charging"
-        android:label="ScamShield Live"
-        android:roundIcon="@android:drawable/ic_lock_idle_charging"
+        android:allowBackup="false"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@android:style/Theme.DeviceDefault.Light.NoActionBar"
         android:usesCleartextTraffic="true">
 
-        <!-- Main User Settings & Activation Activity -->
+        <!-- Settings & activation screen -->
         <activity
             android:name=".MainActivity"
             android:exported="true">
@@ -33,7 +33,16 @@
             </intent-filter>
         </activity>
 
-        <!-- Android Call Screening Service: intercepts unknown incoming calls -->
+        <!-- Invisible shim: starts the mic service from the foreground (Android 14 rule) -->
+        <activity
+            android:name=".CallGuardActivity"
+            android:theme="@style/InvisibleLauncher"
+            android:excludeFromRecents="true"
+            android:taskAffinity=""
+            android:noHistory="true"
+            android:exported="false" />
+
+        <!-- Sees incoming calls and records the caller's number -->
         <service
             android:name=".CallGuardianScreeningService"
             android:permission="android.permission.BIND_SCREENING_SERVICE"
@@ -43,16 +52,25 @@
             </intent-filter>
         </service>
 
-        <!-- Silent Background Audio Listener Service -->
+        <!-- Listens to the answered call and scores the caller's speech -->
         <service
             android:name=".CallAudioListenerService"
             android:foregroundServiceType="microphone"
             android:exported="false" />
 
-        <!-- Stealth Heads-Up Floating Alert Overlay Service -->
+        <!-- Draws the silent warning banner over the call screen -->
         <service
             android:name=".StealthOverlayService"
             android:exported="false" />
+
+        <!-- Starts monitoring when a call is answered, stops it when the call ends -->
+        <receiver
+            android:name=".CallStateReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.PHONE_STATE" />
+            </intent-filter>
+        </receiver>
 
     </application>
 

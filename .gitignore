@@ -31,3 +31,9 @@ n8n_data/
 *.log
 .DS_Store
 Thumbs.db
+
+# Android build artifacts & machine-specific SDK path
+apps/mobile/build/
+apps/mobile/app/build/
+apps/mobile/.gradle/
+apps/mobile/local.properties
