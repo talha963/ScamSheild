@@ -19,6 +19,7 @@ import {
   Moon,
   Volume2,
   PhoneCall,
+  Landmark,
   Download,
 } from 'lucide-react';
 
@@ -66,6 +67,55 @@ export const Header: React.FC<HeaderProps> = ({
       desc: 'Act as a scammer & test real-time AI citizen responses',
       icon: <Radio className="w-4 h-4 text-blue-600 dark:text-blue-400" />,
       color: 'blue',
+    },
+    {
+      id: 'mock-bank',
+      name: 'Smart Banking Protection',
+      desc: 'Graduated circuit-breaker holds the money during a scam call',
+      icon: <Landmark className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />,
+      color: 'cyan',
+    },
+    {
+      id: 'guardians',
+      name: 'Guardian Circle',
+      desc: 'Family gets a WhatsApp alert and approves or blocks the transfer',
+      icon: <Users className="w-4 h-4 text-violet-600 dark:text-violet-400" />,
+      color: 'violet',
+    },
+    {
+      id: 'scam-lens',
+      name: 'Scam Lens',
+      desc: 'Check a fake SMS, receipt or QR code for tampering',
+      icon: <Eye className="w-4 h-4 text-amber-600 dark:text-amber-400" />,
+      color: 'amber',
+    },
+    {
+      id: 'scam-gym',
+      name: 'Scam Gym',
+      desc: 'Practise saying no to a scammer, safely',
+      icon: <Swords className="w-4 h-4 text-rose-600 dark:text-rose-400" />,
+      color: 'rose',
+    },
+    {
+      id: 'scam-radar',
+      name: 'Scam Radar',
+      desc: 'Live map of scam campaigns across Pakistan',
+      icon: <MapPin className="w-4 h-4 text-teal-600 dark:text-teal-400" />,
+      color: 'teal',
+    },
+    {
+      id: 'evidence-pack',
+      name: 'Evidence Pack',
+      desc: 'One-click dossier for the bank and FIA Cybercrime',
+      icon: <FileText className="w-4 h-4 text-slate-600 dark:text-slate-400" />,
+      color: 'slate',
+    },
+    {
+      id: 'evaluation',
+      name: 'Benchmark Results',
+      desc: 'Measured accuracy, latency and per-language fairness',
+      icon: <BarChart3 className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />,
+      color: 'indigo',
     },
   ];
 
@@ -159,7 +209,7 @@ export const Header: React.FC<HeaderProps> = ({
 
               {/* Creative Dropdown Menu */}
               {toolsDropdownOpen && (
-                <div className="absolute top-full right-0 mt-3 w-80 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl p-2.5 z-50 space-y-1 animate-in fade-in zoom-in-95 duration-150">
+                <div className="absolute top-full right-0 mt-3 w-80 max-h-[70vh] overflow-y-auto rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl p-2.5 z-50 space-y-1 animate-in fade-in zoom-in-95 duration-150">
                   <div className="px-3 py-2 border-b border-slate-100 dark:border-slate-800 text-[10px] uppercase font-bold text-slate-400 dark:text-slate-500 tracking-wider">
                     Interactive Safety Simulators
                   </div>
