@@ -103,8 +103,8 @@ class CallAudioListenerService : Service() {
 
             val registered = GuardianApi.startSession(this@CallAudioListenerService, callerNumber, bankingAppOpen)
             if (registered == null) {
-                // No server means no analysis. Say so rather than let the user believe
-                // this call is being checked.
+                // No server: we cannot transcribe speech, so there is nothing to score.
+                // Say so plainly instead of letting the user think the call is being checked.
                 Log.w(TAG, "Could not reach the ScamShield server; not monitoring this call.")
                 reportUnreachable()
                 stopSelf()

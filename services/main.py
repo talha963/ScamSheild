@@ -16,6 +16,7 @@ from services.shared.schemas import (
 from services.audio_gateway.gateway import router as audio_router
 from services.audio_gateway.guardian import router as guardian_router
 from services.evaluation.api import router as evaluation_router
+from services.bank.api import router as bank_breaker_router
 from services.lens.vision_engine import ScamLensEngine
 from apps.mock_bank.main import app as bank_subapp
 
@@ -38,6 +39,7 @@ app.add_middleware(
 app.include_router(audio_router)
 app.include_router(guardian_router)
 app.include_router(evaluation_router)
+app.include_router(bank_breaker_router)
 app.mount("/bank", bank_subapp)
 
 from services.analysis.gemini_engine import GeminiAnalysisEngine

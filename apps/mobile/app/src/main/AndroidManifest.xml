@@ -11,6 +11,7 @@
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.ANSWER_PHONE_CALLS" />
 
@@ -57,6 +58,16 @@
             android:name=".CallAudioListenerService"
             android:foregroundServiceType="microphone"
             android:exported="false" />
+
+        <!-- Offline demo: scripted scam call, no server or microphone needed -->
+        <service
+            android:name=".DemoCallService"
+            android:foregroundServiceType="specialUse"
+            android:exported="false">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Plays a scripted demonstration of a scam call alert" />
+        </service>
 
         <!-- Draws the silent warning banner over the call screen -->
         <service

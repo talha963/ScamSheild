@@ -5,7 +5,7 @@ import { HomePage } from './components/HomePage/HomePage';
 import { CallCompanion } from './components/CallCompanion/CallCompanion';
 import { ScamCallDemo } from './components/ScamCallDemo/ScamCallDemo';
 import { LiveCallGuard } from './components/LiveCallGuard/LiveCallGuard';
-import { MockBank } from './components/MockBank/MockBank';
+import { BankGuard } from './components/BankGuard/BankGuard';
 import { ScamLens } from './components/ScamLens/ScamLens';
 import { ScamGym } from './components/ScamGym/ScamGym';
 import { ScamRadar } from './components/ScamRadar/ScamRadar';
@@ -123,16 +123,7 @@ export function App() {
               <LiveCallGuard />
             )}
 
-            {activeTab === 'mock-bank' && (
-              <MockBank
-                currentTier={currentRiskEvent.tier}
-                activeCallId={currentRiskEvent.call_id}
-                isCallActive={currentRiskEvent.fused_score > 20}
-                onSimulateGuardianApproval={() => {
-                  setActiveTab('guardians');
-                }}
-              />
-            )}
+            {activeTab === 'mock-bank' && <BankGuard />}
 
             {activeTab === 'scam-lens' && <ScamLens />}
 

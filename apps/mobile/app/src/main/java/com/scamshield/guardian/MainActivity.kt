@@ -304,6 +304,22 @@ class MainActivity : Activity() {
             }
         }
 
+        dialogView.findViewById<Button>(R.id.btnRunDemo)?.setOnClickListener {
+            if (!SetupChecks.canDrawOverlay(this)) {
+                AlertDialog.Builder(this)
+                    .setTitle("One permission needed")
+                    .setMessage("The demo shows a banner over other apps, so ScamShield needs \"Display over other apps\".")
+                    .setPositiveButton("Open settings") { _, _ -> fixPermission("overlay") }
+                    .setNegativeButton("Cancel", null)
+                    .show()
+                return@setOnClickListener
+            }
+            dialog.dismiss()
+            Toast.makeText(this, "Demo call starting - watch for the vibration", Toast.LENGTH_LONG).show()
+            val svc = Intent(this, DemoCallService::class.java).putExtra("action", DemoCallService.ACTION_START)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) startForegroundService(svc) else startService(svc)
+        }
+
         btnClose.setOnClickListener {
             dialog.dismiss()
         }
