@@ -37,3 +37,6 @@ apps/mobile/build/
 apps/mobile/app/build/
 apps/mobile/.gradle/
 apps/mobile/local.properties
+
+# The phone app must not bundle a copy of itself (18 MB of dead weight)
+apps/mobile/app/src/main/assets/web/*.apk
