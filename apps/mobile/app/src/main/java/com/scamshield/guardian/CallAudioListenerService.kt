@@ -9,6 +9,7 @@ import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.media.AudioDeviceInfo
 import android.media.AudioFormat
 import android.media.AudioManager
 import android.media.AudioRecord
@@ -52,7 +53,7 @@ class CallAudioListenerService : Service() {
         private const val SAMPLE_RATE = 16000
         private const val CHUNK_SECONDS = 6
         private const val BYTES_PER_CHUNK = SAMPLE_RATE * CHUNK_SECONDS * 2  // 16-bit mono
-        private const val SILENCE_RMS = 0.012                                // below this = nobody talking
+        private const val SILENCE_RMS = 0.001                                // lower threshold catches phone speakerphone clearly
         private const val MAX_CARRY_CHUNKS = 3                               // cap on audio kept after failures
     }
 
@@ -121,10 +122,16 @@ class CallAudioListenerService : Service() {
     private fun routeAudioToSpeaker() {
         try {
             val am = getSystemService(Context.AUDIO_SERVICE) as AudioManager
-            if (!am.isSpeakerphoneOn) {
-                @Suppress("DEPRECATION")
-                am.isSpeakerphoneOn = true
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                val devices = am.availableCommunicationDevices
+                val speaker = devices.firstOrNull { it.type == AudioDeviceInfo.TYPE_BUILTIN_SPEAKER }
+                if (speaker != null) {
+                    val res = am.setCommunicationDevice(speaker)
+                    Log.i(TAG, "setCommunicationDevice(SPEAKER) returned $res on Android 12+")
+                }
             }
+            @Suppress("DEPRECATION")
+            am.isSpeakerphoneOn = true
         } catch (e: Exception) {
             Log.w(TAG, "Could not enable speakerphone: ${e.message}")
         }
@@ -140,17 +147,29 @@ class CallAudioListenerService : Service() {
             return
         }
 
+        // Try raw MIC first so phone hardware echo-cancellation does not mute the speakerphone caller audio
         val recorder = try {
-            AudioRecord(
-                MediaRecorder.AudioSource.VOICE_RECOGNITION,   // mic, tuned for speech
+            val rec = AudioRecord(
+                MediaRecorder.AudioSource.MIC,
                 SAMPLE_RATE,
                 AudioFormat.CHANNEL_IN_MONO,
                 AudioFormat.ENCODING_PCM_16BIT,
                 maxOf(minBuffer * 2, BYTES_PER_CHUNK)
             )
+            if (rec.state == AudioRecord.STATE_INITIALIZED) rec else throw IllegalStateException("MIC not initialized")
         } catch (e: Exception) {
-            Log.e(TAG, "Could not open microphone: ${e.message}")
-            return
+            try {
+                AudioRecord(
+                    MediaRecorder.AudioSource.VOICE_RECOGNITION,
+                    SAMPLE_RATE,
+                    AudioFormat.CHANNEL_IN_MONO,
+                    AudioFormat.ENCODING_PCM_16BIT,
+                    maxOf(minBuffer * 2, BYTES_PER_CHUNK)
+                )
+            } catch (e2: Exception) {
+                Log.e(TAG, "Could not open microphone: ${e2.message}")
+                return
+            }
         }
 
         if (recorder.state != AudioRecord.STATE_INITIALIZED) {
@@ -183,10 +202,9 @@ class CallAudioListenerService : Service() {
                 val level = WavEncoder.rmsLevel(pcm)
                 if (level < SILENCE_RMS) {
                     silentChunks++
-                    // Dead silence for ~30s of an active call means this phone is not letting
-                    // us hear it. Say so plainly rather than pretending to protect the user.
-                    if (!heardSomething && silentChunks == 5) reportDeaf()
-                    if (carried.isEmpty()) continue
+                    // Alert only if 15 consecutive chunks (90s) are completely silent
+                    if (!heardSomething && silentChunks == 15) reportDeaf()
+                    if (carried.isEmpty() && silentChunks > 1) continue
                 } else {
                     heardSomething = true
                     silentChunks = 0
@@ -343,6 +361,16 @@ class CallAudioListenerService : Service() {
         runCatching { audioRecord?.stop() }
         runCatching { audioRecord?.release() }
         audioRecord = null
+        try {
+            val am = getSystemService(Context.AUDIO_SERVICE) as AudioManager
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                am.clearCommunicationDevice()
+            }
+            @Suppress("DEPRECATION")
+            am.isSpeakerphoneOn = false
+        } catch (e: Exception) {
+            Log.w(TAG, "Could not reset speakerphone: ${e.message}")
+        }
     }
 
     override fun onDestroy() {

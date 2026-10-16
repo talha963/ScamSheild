@@ -45,27 +45,44 @@ Cloud Run sets `PORT` itself and `run_system.py` already honours it, so no chang
 
 ## Option B — A quick tunnel for testing today
 
-No hosting account needed, but the URL dies when you close the terminal. Good for showing someone,
-not for giving the app away.
+No hosting account needed, but **the address changes every time you restart it**. Good for
+testing and demos, not for giving the app away.
 
-```bash
-python run_system.py
+Double-click **`start_scamshield.bat`** in the project root. It starts the backend, opens the
+tunnel, prints the public address and copies it to your clipboard:
+
+```text
+   PUT THIS ADDRESS IN THE PHONE APP:
+
+     https://something-random.trycloudflare.com
 ```
 
-In a second terminal:
+In ScamShield: tap the **Shield Active** pill, paste it into *ScamShield Server URL*, then tap
+**Save & Test Server**. Keep the window open while you use the app.
 
-```bash
-cloudflared tunnel --url http://localhost:8000
-```
-
-Use the `https://....trycloudflare.com` address it prints. (`cloudflared` is already on your PATH.)
+> **Never hardcode a trycloudflare address as the app's default.** It stops working the moment the
+> tunnel closes, and every build afterwards ships a dead address — the app then reports
+> "Cannot reach the server" even though everything else is fine. Pass it with
+> `-Pscamshield.serverUrl=` only when you want a specific build to carry it.
 
 ---
 
 ## Option C — Your own Wi-Fi only
 
-Nothing to deploy. Run `python run_system.py`, find your computer's IP with `ipconfig`, and use
-`http://THAT-IP:8000`. Only phones on the same Wi-Fi can reach it.
+Nothing to deploy, but there are three ways it silently breaks:
+
+1. **The server is not running.** Start it with `start_scamshield.bat` or `python run_system.py`.
+2. **Your computer's IP changed.** Windows hands out a new one over time, so an address that
+   worked last week may now belong to nothing. Check with `ipconfig`.
+3. **Windows Firewall blocks the port.** By default nothing may reach port 8000 from your phone.
+   Open an **Administrator** PowerShell once and run:
+
+   ```powershell
+   New-NetFirewallRule -DisplayName "ScamShield Backend 8000" -Direction Inbound -Action Allow -Protocol TCP -LocalPort 8000 -Profile Private
+   ```
+
+The phone must also be on that same Wi-Fi, not mobile data. The tunnel in Option B avoids all
+three problems.
 
 ---
 

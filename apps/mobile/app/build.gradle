@@ -18,6 +18,9 @@ android {
         //   ./gradlew assembleDebug -Pscamshield.serverUrl=https://your-server
         // Left empty, the app asks the user for it on first run.
         buildConfigField "String", "DEFAULT_SERVER_URL",
+                // Never hardcode a trycloudflare address here: those expire when the tunnel
+                // stops, and every later build would ship a dead address. Empty means the
+                // app asks the user, which is always honest.
                 "\"${project.findProperty('scamshield.serverUrl') ?: ''}\""
     }
 
@@ -46,4 +49,6 @@ dependencies {
     implementation 'androidx.core:core-ktx:1.13.0'
     implementation 'androidx.appcompat:appcompat:1.7.1'
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1'
+    // Serves the bundled web app over https:// so its ES modules are not blocked by CORS
+    implementation 'androidx.webkit:webkit:1.11.0'
 }

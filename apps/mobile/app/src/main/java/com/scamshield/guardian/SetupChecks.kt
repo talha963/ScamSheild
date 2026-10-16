@@ -94,41 +94,54 @@ object SetupChecks {
                 "The address must start with http:// or https://")
         }
 
-        return try {
-            val conn = (URL("$baseUrl/health").openConnection() as HttpURLConnection).apply {
-                requestMethod = "GET"
-                connectTimeout = 8000
-                readTimeout = 8000
-            }
-            val code = conn.responseCode
-            val body = try {
-                conn.inputStream.bufferedReader().use { it.readText() }
-            } catch (e: Exception) {
-                ""
-            }
-            conn.disconnect()
+        // A first request to a sleeping server or a cold tunnel can be slow, and phone Wi-Fi
+        // drops a packet now and then. Try a few times before calling it unreachable.
+        var last: Exception? = null
+        repeat(3) { attempt ->
+            try {
+                val conn = (URL("$baseUrl/health").openConnection() as HttpURLConnection).apply {
+                    requestMethod = "GET"
+                    connectTimeout = 10000
+                    readTimeout = 20000
+                    useCaches = false
+                }
+                val code = conn.responseCode
+                val body = try {
+                    conn.inputStream.bufferedReader().use { it.readText() }
+                } catch (e: Exception) {
+                    ""
+                }
+                conn.disconnect()
 
-            when {
-                code == 200 -> SetupCheck("server", "ScamShield server", true,
-                    "Connected. The server answered normally.")
-                else -> SetupCheck("server", "ScamShield server", false,
-                    "The server answered with error $code. ${body.take(120)}")
+                return when {
+                    code == 200 -> SetupCheck("server", "ScamShield server", true,
+                        "Connected. The server answered normally.")
+                    code in 500..599 -> SetupCheck("server", "ScamShield server", false,
+                        "The server is reachable but returned error $code. ${body.take(120)}")
+                    else -> SetupCheck("server", "ScamShield server", false,
+                        "The server answered with error $code. ${body.take(120)}")
+                }
+            } catch (e: Exception) {
+                last = e
+                if (attempt < 2) Thread.sleep(1200)
             }
-        } catch (e: Exception) {
-            val why = when {
-                e.message?.contains("ENETUNREACH") == true ||
-                e.message?.contains("Unable to resolve host") == true ->
-                    "Could not reach that address. Check the phone's internet connection and that the address is spelt correctly."
-                e.message?.contains("ECONNREFUSED") == true ->
-                    "The address was found but nothing is listening on that port. Is the server running?"
-                e.message?.contains("timed out") == true || e is java.net.SocketTimeoutException ->
-                    "The server did not answer in time. If it is on your own Wi-Fi, make sure the phone is on that same Wi-Fi."
-                e.message?.contains("CLEARTEXT") == true ->
-                    "Android blocked an unencrypted http:// address. Use an https:// address."
-                else -> "Could not connect: ${e.javaClass.simpleName} ${e.message.orEmpty()}"
-            }
-            SetupCheck("server", "ScamShield server", false, why)
         }
+
+        val e = last
+        val why = when {
+            e == null -> "Could not connect for an unknown reason."
+            e.message?.contains("ENETUNREACH") == true ||
+            e.message?.contains("Unable to resolve host") == true ->
+                    "Could not reach that address. Check the phone's internet connection and that the address is spelt correctly."
+            e.message?.contains("ECONNREFUSED") == true ->
+                "The address was found but nothing is listening on that port. Is the server running?"
+            e.message?.contains("timed out") == true || e is java.net.SocketTimeoutException ->
+                "The server did not answer after 3 tries. If the address is a computer on your Wi-Fi, check that the server is running, that the phone is on the same Wi-Fi, and that the computer's firewall allows port 8000."
+            e.message?.contains("CLEARTEXT") == true ->
+                "Android blocked an unencrypted http:// address. Use an https:// address."
+            else -> "Could not connect: ${e.javaClass.simpleName} ${e.message.orEmpty()}"
+        }
+        return SetupCheck("server", "ScamShield server", false, why)
     }
 
     /** Checks whether the live transcription is actually usable (server has an AI key). */

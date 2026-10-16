@@ -1,6 +1,7 @@
 package com.scamshield.guardian
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.app.Activity
 import android.app.AlertDialog
 import android.app.role.RoleManager
@@ -10,10 +11,22 @@ import android.graphics.Color
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.VibrationEffect
+import android.os.Vibrator
 import android.provider.Settings
 import android.text.Editable
 import android.text.TextWatcher
+import android.view.LayoutInflater
 import android.view.View
+import android.webkit.JavascriptInterface
+import android.webkit.PermissionRequest
+import android.webkit.WebChromeClient
+import android.webkit.WebSettings
+import android.webkit.WebResourceRequest
+import android.webkit.WebResourceResponse
+import android.webkit.WebView
+import android.webkit.WebViewClient
+import androidx.webkit.WebViewAssetLoader
 import android.widget.Button
 import android.widget.CheckBox
 import android.widget.EditText
@@ -21,6 +34,7 @@ import android.widget.LinearLayout
 import android.widget.ProgressBar
 import android.widget.Switch
 import android.widget.TextView
+import android.widget.Toast
 import androidx.core.app.ActivityCompat
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -28,20 +42,16 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 /**
- * Setup screen. Its job is to make the phone's readiness obvious: every requirement is listed
- * with a tick or a cross and a one-tap fix, and the server test always reports what happened.
+ * Main Activity: Hosts the full ScamShield Web App interface identically to the web version
+ * (navbar, dark mode, Uncle Tariq scam demo, live call guardian, hero features) while running
+ * the native background call interceptor services for real incoming phone calls.
  */
 class MainActivity : Activity() {
 
-    private lateinit var switchGuardian: Switch
-    private lateinit var etServerUrl: EditText
-    private lateinit var btnSaveSettings: Button
-    private lateinit var btnRecheck: Button
-    private lateinit var tvStatus: TextView
-    private lateinit var tvReadiness: TextView
-    private lateinit var cbBankingApp: CheckBox
-    private lateinit var checklist: LinearLayout
-    private lateinit var progress: ProgressBar
+    private lateinit var webView: WebView
+    private lateinit var btnFloatingShield: LinearLayout
+    private lateinit var pillDot: View
+    private lateinit var tvPillText: TextView
 
     private val prefs by lazy { getSharedPreferences("scamshield_prefs", Context.MODE_PRIVATE) }
 
@@ -55,173 +65,260 @@ class MainActivity : Activity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        switchGuardian = findViewById(R.id.switchGuardian)
-        etServerUrl = findViewById(R.id.etServerUrl)
-        btnSaveSettings = findViewById(R.id.btnSaveSettings)
-        btnRecheck = findViewById(R.id.btnRecheck)
-        tvStatus = findViewById(R.id.tvStatus)
-        tvReadiness = findViewById(R.id.tvReadiness)
-        cbBankingApp = findViewById(R.id.cbBankingApp)
-        checklist = findViewById(R.id.checklist)
-        progress = findViewById(R.id.progress)
+        webView = findViewById(R.id.webView)
+        btnFloatingShield = findViewById(R.id.btnFloatingShield)
+        pillDot = findViewById(R.id.pillDot)
+        tvPillText = findViewById(R.id.tvPillText)
+
+        setupWebView()
+        setupFloatingPill()
+
+        // Prompt for essential permissions on first start so background interception is active
+        requestMissingPermissions()
+        updatePillStatus()
+    }
+
+    @SuppressLint("SetJavaScriptEnabled")
+    private fun setupWebView() {
+        val settings = webView.settings
+        settings.javaScriptEnabled = true
+        settings.domStorageEnabled = true
+        settings.allowFileAccess = true
+        settings.allowContentAccess = true
+        settings.databaseEnabled = true
+        settings.mediaPlaybackRequiresUserGesture = false
+        settings.cacheMode = WebSettings.LOAD_DEFAULT
+
+        // The bundled React app is loaded as an ES module, and a module fetched over file://
+        // is blocked by CORS ("origin null"), which leaves the page blank. WebViewAssetLoader
+        // serves the same files over https://appassets.androidplatform.net/ so they load.
+        val assetLoader = WebViewAssetLoader.Builder()
+            .addPathHandler("/assets/", WebViewAssetLoader.AssetsPathHandler(this))
+            .build()
+
+        webView.webViewClient = object : WebViewClient() {
+            override fun shouldInterceptRequest(
+                view: WebView,
+                request: WebResourceRequest
+            ): WebResourceResponse? = assetLoader.shouldInterceptRequest(request.url)
+
+            override fun shouldOverrideUrlLoading(view: WebView?, url: String?): Boolean {
+                // Keep in-app navigation inside the WebView
+                return false
+            }
+        }
+
+        webView.webChromeClient = object : WebChromeClient() {
+            override fun onPermissionRequest(request: PermissionRequest?) {
+                // Grant microphone or media permissions requested by the web view (for in-app demo)
+                request?.grant(request.resources)
+            }
+        }
+
+        // Bridge native Android capabilities to the web frontend
+        webView.addJavascriptInterface(AndroidWebInterface(), "ScamShieldAndroid")
+
+        // Load the bundled React web application through the asset loader (https origin)
+        webView.loadUrl("https://appassets.androidplatform.net/assets/web/index.html")
+    }
+
+    private fun setupFloatingPill() {
+        btnFloatingShield.setOnClickListener {
+            showSettingsDialog()
+        }
+    }
+
+    /** Updates the floating status pill in the bottom right corner */
+    private fun updatePillStatus() {
+        val enabled = prefs.getBoolean("guardian_enabled", true)
+        val checks = SetupChecks.deviceChecks(this)
+        val missingRequired = checks.filter { it.required && !it.ok }
+
+        when {
+            !enabled -> {
+                pillDot.setBackgroundResource(R.drawable.dot_red)
+                tvPillText.text = "Shield Off"
+            }
+            missingRequired.isNotEmpty() -> {
+                pillDot.setBackgroundResource(R.drawable.dot_amber)
+                tvPillText.text = "Setup (${missingRequired.size})"
+            }
+            else -> {
+                pillDot.setBackgroundResource(R.drawable.dot_green)
+                tvPillText.text = "Shield Active"
+            }
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        updatePillStatus()
+    }
+
+    override fun onBackPressed() {
+        if (webView.canGoBack()) {
+            webView.goBack()
+        } else {
+            super.onBackPressed()
+        }
+    }
+
+    /** Opens the modal dialog containing real-time permission status and server configuration */
+    private fun showSettingsDialog() {
+        val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_shield_settings, null)
+        val dialog = AlertDialog.Builder(this)
+            .setView(dialogView)
+            .create()
+
+        val switchGuardian = dialogView.findViewById<Switch>(R.id.switchGuardian)
+        val cbBankingApp = dialogView.findViewById<CheckBox>(R.id.cbBankingApp)
+        val checklist = dialogView.findViewById<LinearLayout>(R.id.checklist)
+        val btnRecheck = dialogView.findViewById<Button>(R.id.btnRecheck)
+        val etServerUrl = dialogView.findViewById<EditText>(R.id.etServerUrl)
+        val btnSaveSettings = dialogView.findViewById<Button>(R.id.btnSaveSettings)
+        val progress = dialogView.findViewById<ProgressBar>(R.id.progress)
+        val tvStatus = dialogView.findViewById<TextView>(R.id.tvStatus)
+        val tvReadiness = dialogView.findViewById<TextView>(R.id.tvReadiness)
+        val btnClose = dialogView.findViewById<Button>(R.id.btnCloseDialog)
 
         switchGuardian.isChecked = prefs.getBoolean("guardian_enabled", true)
         cbBankingApp.isChecked = prefs.getBoolean("banking_app_open", false)
         etServerUrl.setText(prefs.getString("server_url", GuardianApi.DEFAULT_SERVER))
 
+        fun refreshList() {
+            val checks = SetupChecks.deviceChecks(this)
+            checklist.removeAllViews()
+            checks.forEach { check ->
+                val row = LinearLayout(this).apply {
+                    orientation = LinearLayout.HORIZONTAL
+                    setPadding(0, 10, 0, 10)
+                    gravity = android.view.Gravity.CENTER_VERTICAL
+                }
+
+                row.addView(TextView(this).apply {
+                    text = if (check.ok) "✓" else if (check.required) "✕" else "!"
+                    setTextColor(Color.parseColor(if (check.ok) "#059669" else if (check.required) "#DC2626" else "#D97706"))
+                    textSize = 16f
+                    setPadding(0, 0, 16, 0)
+                })
+
+                val textCol = LinearLayout(this).apply {
+                    orientation = LinearLayout.VERTICAL
+                    layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+                }
+                textCol.addView(TextView(this).apply {
+                    text = check.title + if (!check.required) " (optional)" else ""
+                    setTextColor(Color.parseColor("#0F172A"))
+                    textSize = 13f
+                })
+                textCol.addView(TextView(this).apply {
+                    text = check.detail
+                    setTextColor(Color.parseColor("#64748B"))
+                    textSize = 10f
+                })
+                row.addView(textCol)
+
+                if (!check.ok) {
+                    row.addView(Button(this).apply {
+                        text = "Fix"
+                        textSize = 11f
+                        setOnClickListener {
+                            fixPermission(check.id)
+                            dialog.dismiss()
+                        }
+                    })
+                }
+                checklist.addView(row)
+            }
+
+            val missingRequired = checks.filter { it.required && !it.ok }
+            val enabled = switchGuardian.isChecked
+
+            when {
+                !enabled -> {
+                    tvReadiness.text = "ScamShield is switched off"
+                    tvReadiness.setTextColor(Color.parseColor("#DC2626"))
+                }
+                missingRequired.isEmpty() -> {
+                    tvReadiness.text = "Ready — ScamShield will guard your next phone call"
+                    tvReadiness.setTextColor(Color.parseColor("#059669"))
+                }
+                else -> {
+                    tvReadiness.text = "Setup needed: ${missingRequired.size} permission(s) missing"
+                    tvReadiness.setTextColor(Color.parseColor("#D97706"))
+                }
+            }
+            updatePillStatus()
+        }
+
         switchGuardian.setOnCheckedChangeListener { _, isChecked ->
             prefs.edit().putBoolean("guardian_enabled", isChecked).apply()
-            refresh()
+            refreshList()
         }
         cbBankingApp.setOnCheckedChangeListener { _, isChecked ->
             prefs.edit().putBoolean("banking_app_open", isChecked).apply()
         }
 
-        // A result for the old address must not linger once the address is edited
-        etServerUrl.addTextChangedListener(object : TextWatcher {
-            override fun afterTextChanged(s: Editable?) {
-                if (tvStatus.text.isNotEmpty()) tvStatus.text = ""
-            }
-            override fun beforeTextChanged(s: CharSequence?, a: Int, b: Int, c: Int) {}
-            override fun onTextChanged(s: CharSequence?, a: Int, b: Int, c: Int) {}
-        })
-
-        btnSaveSettings.setOnClickListener { saveAndTest() }
-        btnRecheck.setOnClickListener { requestMissingPermissions(); refresh() }
-
-        requestMissingPermissions()
-        refresh()
-    }
-
-    override fun onResume() {
-        super.onResume()
-        refresh()   // permissions may have been granted in Settings while we were away
-    }
-
-    override fun onRequestPermissionsResult(code: Int, perms: Array<out String>, results: IntArray) {
-        super.onRequestPermissionsResult(code, perms, results)
-        refresh()
-    }
-
-    /** Saves the address, then reports the outcome in a dialog that cannot be missed. */
-    private fun saveAndTest() {
-        val url = etServerUrl.text.toString().trim().trimEnd('/')
-        prefs.edit().putString("server_url", url).apply()
-
-        progress.visibility = View.VISIBLE
-        btnSaveSettings.isEnabled = false
-        tvStatus.text = "Contacting $url ..."
-        tvStatus.setTextColor(Color.parseColor("#475569"))
-
-        CoroutineScope(Dispatchers.Main).launch {
-            val server = withContext(Dispatchers.IO) { SetupChecks.serverCheck(this@MainActivity, url) }
-            val ai = if (server.ok) {
-                withContext(Dispatchers.IO) { SetupChecks.aiCheck(this@MainActivity, url) }
-            } else null
-
-            progress.visibility = View.GONE
-            btnSaveSettings.isEnabled = true
-
-            val title: String
-            val message: String
-            if (!server.ok) {
-                title = "Cannot reach the server"
-                message = "${server.detail}\n\nAddress tried:\n$url/health"
-            } else if (ai != null && !ai.ok) {
-                title = "Server reached, AI not ready"
-                message = "${ai.detail}\n\nScamShield will connect, but it cannot analyse a live call until this is fixed."
-            } else {
-                title = "Connected"
-                message = "The server answered and the call-analysis service is available.\n\nScamShield is ready to check your calls."
-            }
-
-            tvStatus.text = if (server.ok && (ai?.ok != false)) "Server connected." else title
-            tvStatus.setTextColor(Color.parseColor(if (server.ok && (ai?.ok != false)) "#059669" else "#DC2626"))
-
-            AlertDialog.Builder(this@MainActivity)
-                .setTitle(title)
-                .setMessage(message)
-                .setPositiveButton("OK", null)
-                .show()
-
-            refresh()
-        }
-    }
-
-    /** Rebuilds the readiness checklist from the device's current state. */
-    private fun refresh() {
-        val checks = SetupChecks.deviceChecks(this)
-        checklist.removeAllViews()
-        checks.forEach { checklist.addView(buildRow(it)) }
-
-        val missingRequired = checks.filter { it.required && !it.ok }
-        val enabled = switchGuardian.isChecked
-
-        when {
-            !enabled -> {
-                tvReadiness.text = "ScamShield is switched off"
-                tvReadiness.setTextColor(Color.parseColor("#DC2626"))
-            }
-            missingRequired.isEmpty() -> {
-                tvReadiness.text = "Ready - ScamShield will check your next call"
-                tvReadiness.setTextColor(Color.parseColor("#059669"))
-            }
-            else -> {
-                tvReadiness.text = "Not ready - ${missingRequired.size} permission(s) still needed"
-                tvReadiness.setTextColor(Color.parseColor("#D97706"))
-            }
-        }
-    }
-
-    /** One checklist line: tick/cross, title, and a Fix button that opens the right screen. */
-    private fun buildRow(check: SetupCheck): View {
-        val row = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            setPadding(0, 12, 0, 12)
-            gravity = android.view.Gravity.CENTER_VERTICAL
+        btnRecheck.setOnClickListener {
+            requestMissingPermissions()
+            refreshList()
         }
 
-        row.addView(TextView(this).apply {
-            text = if (check.ok) "✓" else if (check.required) "✕" else "!"
-            setTextColor(Color.parseColor(if (check.ok) "#059669" else if (check.required) "#DC2626" else "#D97706"))
-            textSize = 18f
-            setPadding(0, 0, 20, 0)
-        })
+        btnSaveSettings.setOnClickListener {
+            val url = etServerUrl.text.toString().trim().trimEnd('/')
+            prefs.edit().putString("server_url", url).apply()
 
-        val textCol = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
-        }
-        textCol.addView(TextView(this).apply {
-            text = check.title + if (!check.required) " (optional)" else ""
-            setTextColor(Color.parseColor("#0F172A"))
-            textSize = 14f
-        })
-        textCol.addView(TextView(this).apply {
-            text = check.detail
-            setTextColor(Color.parseColor("#64748B"))
-            textSize = 11f
-        })
-        row.addView(textCol)
+            progress.visibility = View.VISIBLE
+            btnSaveSettings.isEnabled = false
+            tvStatus.text = "Testing connection to $url..."
+            tvStatus.setTextColor(Color.parseColor("#475569"))
 
-        if (!check.ok) {
-            row.addView(Button(this).apply {
-                text = "Fix"
-                textSize = 12f
-                setOnClickListener { fix(check.id) }
-            })
+            CoroutineScope(Dispatchers.Main).launch {
+                val server = withContext(Dispatchers.IO) { SetupChecks.serverCheck(this@MainActivity, url) }
+                val ai = if (server.ok) {
+                    withContext(Dispatchers.IO) { SetupChecks.aiCheck(this@MainActivity, url) }
+                } else null
+
+                progress.visibility = View.GONE
+                btnSaveSettings.isEnabled = true
+
+                val success = server.ok && (ai?.ok != false)
+                tvStatus.text = if (success) "✓ Connected to ScamShield Backend" else "✕ ${server.detail}"
+                tvStatus.setTextColor(Color.parseColor(if (success) "#059669" else "#DC2626"))
+
+                // The status line sits below the button and is easily off-screen, so always
+                // report the outcome somewhere that cannot be missed.
+                if (success) {
+                    Toast.makeText(this@MainActivity,
+                        "Connected to the ScamShield server", Toast.LENGTH_LONG).show()
+                } else {
+                    val detail = if (ai != null && !ai.ok) ai.detail else server.detail
+                    AlertDialog.Builder(this@MainActivity)
+                        .setTitle(if (server.ok) "Server reached, AI not ready" else "Cannot reach the server")
+                        .setMessage("$detail\n\nAddress tried:\n$url/health")
+                        .setPositiveButton("OK", null)
+                        .show()
+                }
+
+                refreshList()
+            }
         }
-        return row
+
+        btnClose.setOnClickListener {
+            dialog.dismiss()
+        }
+
+        refreshList()
+        dialog.show()
     }
 
-    /** Sends the user straight to the screen that grants the missing thing. */
-    private fun fix(id: String) {
+    private fun fixPermission(id: String) {
         when (id) {
-            "mic" -> ask(Manifest.permission.RECORD_AUDIO)
-            "phone" -> ask(Manifest.permission.READ_PHONE_STATE)
-            "endcall" -> ask(Manifest.permission.ANSWER_PHONE_CALLS)
+            "mic" -> askPermission(Manifest.permission.RECORD_AUDIO)
+            "phone" -> askPermission(Manifest.permission.READ_PHONE_STATE)
+            "endcall" -> askPermission(Manifest.permission.ANSWER_PHONE_CALLS)
             "notif" -> if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                ask(Manifest.permission.POST_NOTIFICATIONS)
+                askPermission(Manifest.permission.POST_NOTIFICATIONS)
             }
             "overlay" -> if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                 startActivityForResult(
@@ -233,11 +330,13 @@ class MainActivity : Activity() {
         }
     }
 
-    private fun ask(vararg permissions: String) {
+    private fun askPermission(vararg permissions: String) {
         val needed = permissions.filterNot { SetupChecks.permissionGranted(this, it) }
-        if (needed.isEmpty()) { refresh(); return }
+        if (needed.isEmpty()) {
+            updatePillStatus()
+            return
+        }
 
-        // If the user ticked "don't ask again", the system dialog never appears - send them to Settings.
         val canPrompt = needed.any { ActivityCompat.shouldShowRequestPermissionRationale(this, it) }
         val neverAsked = prefs.getBoolean("asked_${needed.first()}", false).not()
         if (canPrompt || neverAsked) {
@@ -245,11 +344,10 @@ class MainActivity : Activity() {
             ActivityCompat.requestPermissions(this, needed.toTypedArray(), PERMISSION_REQ_CODE)
         } else {
             AlertDialog.Builder(this)
-                .setTitle("Permission blocked")
-                .setMessage("Android will not ask again for this permission. Open App info > Permissions and allow it there.")
-                .setPositiveButton("Open settings") { _, _ ->
-                    startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
-                        Uri.parse("package:$packageName")))
+                .setTitle("Permission required")
+                .setMessage("To guard your calls in background, please enable this permission in Android App Settings.")
+                .setPositiveButton("Open Settings") { _, _ ->
+                    startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:$packageName")))
                 }
                 .setNegativeButton("Cancel", null)
                 .show()
@@ -280,8 +378,42 @@ class MainActivity : Activity() {
         }
     }
 
+    override fun onRequestPermissionsResult(code: Int, perms: Array<out String>, results: IntArray) {
+        super.onRequestPermissionsResult(code, perms, results)
+        updatePillStatus()
+    }
+
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
-        refresh()
+        updatePillStatus()
+    }
+
+    /** JavaScript Interface exposed to the embedded React Web App */
+    inner class AndroidWebInterface {
+        @JavascriptInterface
+        fun isNativeApp(): Boolean = true
+
+        @JavascriptInterface
+        fun getServerUrl(): String =
+            prefs.getString("server_url", GuardianApi.DEFAULT_SERVER) ?: GuardianApi.DEFAULT_SERVER
+
+        @JavascriptInterface
+        fun isGuardianEnabled(): Boolean =
+            prefs.getBoolean("guardian_enabled", true)
+
+        @JavascriptInterface
+        fun openShieldSettings() {
+            runOnUiThread { showSettingsDialog() }
+        }
+
+        @JavascriptInterface
+        fun triggerVibration(durationMs: Long) {
+            val vibrator = getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                vibrator?.vibrate(VibrationEffect.createOneShot(durationMs, VibrationEffect.DEFAULT_AMPLITUDE))
+            } else {
+                vibrator?.vibrate(durationMs)
+            }
+        }
     }
 }

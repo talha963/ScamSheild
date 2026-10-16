@@ -19,6 +19,7 @@ import {
   Moon,
   Volume2,
   PhoneCall,
+  Download,
 } from 'lucide-react';
 
 export type ActiveTab =
@@ -214,6 +215,17 @@ export const Header: React.FC<HeaderProps> = ({
               )}
             </button>
 
+            {/* Download Android APK Button */}
+            <a
+              href="./scamshield.apk"
+              download="scamshield.apk"
+              title="Download ScamShield Android APK"
+              className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20 text-xs font-bold transition-all shadow-xs"
+            >
+              <Download className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+              <span>Get APK</span>
+            </a>
+
             {/* Launch Simulator Primary Button */}
             {activeTab === 'home' ? (
               <button
@@ -310,6 +322,15 @@ export const Header: React.FC<HeaderProps> = ({
                 ))}
               </div>
             </div>
+
+            <a
+              href="./scamshield.apk"
+              download="scamshield.apk"
+              className="w-full flex items-center justify-center gap-2 p-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md transition-all mt-3"
+            >
+              <Download className="w-4 h-4" />
+              <span>Download Android APK (9.5 MB)</span>
+            </a>
           </div>
         )}
       </div>

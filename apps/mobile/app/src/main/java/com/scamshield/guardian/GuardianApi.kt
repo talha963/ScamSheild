@@ -37,8 +37,20 @@ object GuardianApi {
             ?.trimEnd('/')
             ?: DEFAULT_SERVER
 
-    /** Registers a new monitoring session. Returns the session id, or null if the server is unreachable. */
+    /**
+     * Registers a new monitoring session. Returns the session id, or null if the server is
+     * unreachable. Retries briefly: a call is in progress, so one dropped packet must not
+     * cost the user their protection.
+     */
     fun startSession(context: Context, callerNumber: String, bankingAppOpen: Boolean): String? {
+        repeat(3) { attempt ->
+            startSessionOnce(context, callerNumber, bankingAppOpen)?.let { return it }
+            if (attempt < 2) Thread.sleep(1000)
+        }
+        return null
+    }
+
+    private fun startSessionOnce(context: Context, callerNumber: String, bankingAppOpen: Boolean): String? {
         val conn = (URL("${serverUrl(context)}/v1/live/guardian/session/start").openConnection() as HttpURLConnection).apply {
             requestMethod = "POST"
             setRequestProperty("Content-Type", "application/json")

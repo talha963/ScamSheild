@@ -20,6 +20,7 @@ import {
   ChevronDown,
   ChevronUp,
   Sparkles,
+  Download,
 } from 'lucide-react';
 import { ActiveTab } from '../Header';
 
@@ -169,6 +170,15 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateTab }) => {
                   <Smartphone className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                   <span>See How Money Stays Safe</span>
                 </button>
+
+                <a
+                  href="./scamshield.apk"
+                  download="scamshield.apk"
+                  className="px-5 py-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm flex items-center gap-2 cursor-pointer transition-all shadow-md shadow-emerald-600/20 transform hover:-translate-y-0.5"
+                >
+                  <Download className="w-4 h-4" />
+                  <span>Download Android App</span>
+                </a>
               </div>
 
               {/* Friendly Reassurance Badges */}
