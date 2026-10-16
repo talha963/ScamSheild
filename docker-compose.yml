@@ -18,10 +18,17 @@ services:
       - "5173:80"
       - "3000:80"
     depends_on:
-      - scamshield-backend
+      scamshield-backend:
+        condition: service_healthy
     networks:
       - scamshield-net
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost/"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
 
   # ----------------------------------------------------------------------------
   # 2. Backend Service: FastAPI + WebSockets + Gemini Analysis + Risk Fusion

@@ -1,0 +1,7 @@
+# Keep the build context small: node_modules is reinstalled inside the image,
+# and dist is rebuilt there too.
+node_modules
+dist
+.vite
+*.log
+.DS_Store
