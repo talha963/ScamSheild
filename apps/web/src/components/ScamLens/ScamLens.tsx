@@ -1,239 +1,283 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import {
   Eye,
   Upload,
   AlertTriangle,
   CheckCircle,
-  FileSearch,
-  Scan,
-  ExternalLink,
   ShieldAlert,
   Sparkles,
   Link2,
+  Loader2,
+  HelpCircle,
+  ImageOff,
 } from 'lucide-react';
-import { ScamLensResult } from '../../types';
-import { MOCK_LENS_SAMPLES } from '../../mockData/scenarios';
 
+/** Exactly what POST /v1/lens/analyze returns. */
+interface LensResponse {
+  verdict: 'safe' | 'suspicious' | 'scam';
+  confidence: number;
+  detected_text: string;
+  extracted_links: string[];
+  tampering_detected: boolean;
+  spoofed_brand: string | null;
+  reasons: string[];
+  qr_destination?: string | null;
+}
+
+const VERDICT = {
+  scam: {
+    label: 'Scam',
+    tone: 'text-rose-700 dark:text-rose-300',
+    bg: 'bg-rose-50 dark:bg-rose-950/40 border-rose-200 dark:border-rose-900',
+    Icon: ShieldAlert,
+  },
+  suspicious: {
+    label: 'Suspicious',
+    tone: 'text-amber-700 dark:text-amber-300',
+    bg: 'bg-amber-50 dark:bg-amber-950/40 border-amber-200 dark:border-amber-900',
+    Icon: AlertTriangle,
+  },
+  safe: {
+    label: 'Looks genuine',
+    tone: 'text-emerald-700 dark:text-emerald-300',
+    bg: 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-900',
+    Icon: CheckCircle,
+  },
+} as const;
+
+/**
+ * Scam Lens — the image really is sent to the backend and judged by the vision model.
+ *
+ * Nothing here is scripted: upload a genuine receipt and it says so, upload a phishing SMS
+ * and it explains why. A demo that always shouts "scam" would be worthless the moment a
+ * judge uploads a photo of their lunch.
+ */
 export const ScamLens: React.FC = () => {
-  const [selectedSample, setSelectedSample] = useState<ScamLensResult>(MOCK_LENS_SAMPLES[0]);
-  const [isScanning, setIsScanning] = useState<boolean>(false);
-  const [customFilePreview, setCustomFilePreview] = useState<string | null>(null);
+  const [preview, setPreview] = useState<string | null>(null);
+  const [fileName, setFileName] = useState<string>('');
+  const [result, setResult] = useState<LensResponse | null>(null);
+  const [scanning, setScanning] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
-  const handleSelectSample = (sample: ScamLensResult) => {
-    setIsScanning(true);
-    setSelectedSample(sample);
-    setCustomFilePreview(null);
-    setTimeout(() => {
-      setIsScanning(false);
-    }, 800);
-  };
+  const analyse = async (file: File) => {
+    setError(null);
+    setResult(null);
+    setFileName(file.name);
+    setPreview(URL.createObjectURL(file));
+    setScanning(true);
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      const previewUrl = URL.createObjectURL(file);
-      setCustomFilePreview(previewUrl);
-      setIsScanning(true);
-      setTimeout(() => {
-        setIsScanning(false);
-        // Set dynamic analysis
-        setSelectedSample({
-          id: `custom_${Date.now()}`,
-          image_url: previewUrl,
-          type: 'sms',
-          verdict: 'scam',
-          confidence: 0.95,
-          detected_text: `Extracted via Gemini Vision: "Urgent security update required on your account. Avoid permanent suspension by clicking the link."`,
-          extracted_links: ['https://auth-verify-portal.secure-net.pk/token=99281'],
-          reasons: [
-            'High emotional pressure and account forfeiture threat',
-            'Lookalike phishing domain mimicking bank domain',
-            'Unsolicited credential verification request',
-          ],
-          tampering_detected: true,
-          spoofed_brand: 'Custom Detected Brand',
-        });
-      }, 1200);
+    try {
+      const body = new FormData();
+      body.append('file', file);
+      const res = await fetch('/v1/lens/analyze', { method: 'POST', body });
+
+      if (!res.ok) {
+        const detail = await res.text();
+        setError(
+          res.status === 503
+            ? 'The image analyser needs a Gemini API key on the server.'
+            : `The server could not analyse this image (HTTP ${res.status}). ${detail.slice(0, 120)}`,
+        );
+        return;
+      }
+      setResult(await res.json());
+    } catch {
+      setError('Could not reach the ScamShield server. Is the backend running?');
+    } finally {
+      setScanning(false);
     }
   };
 
+  const onPick = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) analyse(file);
+  };
+
+  const onDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    const file = e.dataTransfer.files?.[0];
+    if (file && file.type.startsWith('image/')) analyse(file);
+  };
+
+  const v = result ? VERDICT[result.verdict] : null;
+
   return (
-    <div className="space-y-6">
-      {/* Top Banner */}
-      <div className="glass-panel p-4 rounded-2xl border border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2">
-            <Eye className="w-5 h-5 text-cyan-400" />
-            <h2 className="text-sm font-bold text-white uppercase tracking-wider">
-              Feature F9 • Scam Lens (Multimodal Computer Vision)
-            </h2>
-            <span className="text-[10px] px-2 py-0.5 rounded font-mono bg-cyan-950 text-cyan-300 border border-cyan-800">
-              Gemini Vision + OpenCV
-            </span>
-          </div>
-          <p className="text-xs text-slate-300 mt-1">
-            Instant verdict on screenshots of fake SMS, doctored receipts, fake bank screens & QR payloads.
+    <div className="space-y-5">
+      {/* Header */}
+      <div className="flex items-start gap-3">
+        <div className="p-2.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 shrink-0">
+          <Eye className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+        </div>
+        <div className="min-w-0">
+          <h2 className="text-lg font-black text-slate-900 dark:text-white">Scam Lens</h2>
+          <p className="text-sm text-slate-600 dark:text-slate-400">
+            Upload a screenshot of an SMS, a payment receipt or a QR code. The AI reads it and
+            tells you whether it is genuine.
           </p>
         </div>
-
-        {/* Upload Button */}
-        <label className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold bg-cyan-500 hover:bg-cyan-400 text-slate-950 transition-all cursor-pointer shadow-md">
-          <Upload className="w-4 h-4" />
-          <span>Upload Image / Screenshot</span>
-          <input type="file" accept="image/*" onChange={handleFileUpload} className="hidden" />
-        </label>
       </div>
 
-      {/* Preset Test Scenarios */}
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="text-xs text-slate-400 font-semibold mr-1">Preset Benchmarks:</span>
-        {MOCK_LENS_SAMPLES.map((sample, idx) => (
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        {/* Upload */}
+        <div
+          onDrop={onDrop}
+          onDragOver={(e) => e.preventDefault()}
+          className="rounded-3xl border-2 border-dashed border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 p-5 flex flex-col"
+        >
+          {preview ? (
+            <img
+              src={preview}
+              alt={fileName}
+              className="w-full max-h-72 object-contain rounded-2xl bg-slate-100 dark:bg-slate-950"
+            />
+          ) : (
+            <div className="flex-1 min-h-48 flex flex-col items-center justify-center text-center gap-2 py-8">
+              <Upload className="w-8 h-8 text-slate-400" />
+              <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+                Drop an image here
+              </p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                A fake SMS, a JazzCash receipt, a QR code — anything
+              </p>
+            </div>
+          )}
+
+          <input
+            ref={inputRef}
+            type="file"
+            accept="image/*"
+            onChange={onPick}
+            className="hidden"
+          />
           <button
-            key={sample.id}
-            onClick={() => handleSelectSample(sample)}
-            className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
-              selectedSample.id === sample.id && !customFilePreview
-                ? 'bg-cyan-500 text-slate-950 shadow-md font-bold'
-                : 'bg-slate-900 border border-slate-800 text-slate-300 hover:bg-slate-800'
-            }`}
+            onClick={() => inputRef.current?.click()}
+            disabled={scanning}
+            className="mt-4 w-full flex items-center justify-center gap-2 px-4 py-3 rounded-2xl bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white font-bold text-sm cursor-pointer"
           >
-            {sample.type === 'sms' && 'Fake HBL SMS'}
-            {sample.type === 'receipt' && 'Tampered JazzCash Receipt'}
-            {sample.type === 'qr_code' && 'Reverse-Payment QR Code'}
+            {scanning ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Reading the image…
+              </>
+            ) : (
+              <>
+                <Sparkles className="w-4 h-4" />
+                {preview ? 'Choose another image' : 'Choose an image'}
+              </>
+            )}
           </button>
-        ))}
-      </div>
 
-      {/* Main Inspection Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Left Column (5 cols): Image Viewer & Scanner */}
-        <div className="lg:col-span-5">
-          <div className="glass-panel p-4 rounded-2xl border border-slate-800 relative overflow-hidden">
-            <div className="flex items-center justify-between mb-3 text-xs text-slate-400">
-              <span className="font-semibold uppercase">Inspection Target</span>
-              <span className="font-mono text-cyan-400">{selectedSample.type.toUpperCase()}</span>
-            </div>
-
-            {/* Image Preview with Cyber Scanline */}
-            <div className="relative rounded-xl overflow-hidden bg-slate-950 border border-slate-800 h-80 flex items-center justify-center">
-              <img
-                src={customFilePreview || selectedSample.image_url}
-                alt="Inspection Target"
-                className="w-full h-full object-cover opacity-85"
-              />
-
-              {/* Animated Scan Overlay */}
-              {isScanning ? (
-                <div className="absolute inset-0 bg-cyan-950/40 flex flex-col items-center justify-center gap-3 backdrop-blur-xs">
-                  <Scan className="w-12 h-12 text-cyan-400 animate-spin" />
-                  <span className="text-xs font-mono text-cyan-300 tracking-wider">
-                    ANALYZING ARTEFACTS & FONTS...
-                  </span>
-                </div>
-              ) : (
-                <div className="absolute top-3 left-3 px-2.5 py-1 rounded-md bg-slate-950/80 border border-slate-700 text-[10px] font-mono text-cyan-300 flex items-center gap-1.5">
-                  <Sparkles className="w-3 h-3 text-cyan-400" />
-                  <span>OCR & BRAND MATCH VERIFIED</span>
-                </div>
-              )}
-            </div>
-          </div>
+          {fileName && (
+            <p className="mt-2 text-[11px] text-center text-slate-500 dark:text-slate-400 truncate">
+              {fileName}
+            </p>
+          )}
         </div>
 
-        {/* Right Column (7 cols): Vision Verdict & Tampering Report */}
-        <div className="lg:col-span-7 space-y-4">
-          {/* Verdict Banner */}
-          <div
-            className={`p-5 rounded-2xl border ${
-              selectedSample.verdict === 'scam'
-                ? 'bg-rose-950/30 border-rose-500/50 glow-rose'
-                : selectedSample.verdict === 'suspicious'
-                ? 'bg-amber-950/30 border-amber-500/50 glow-amber'
-                : 'bg-emerald-950/30 border-emerald-500/50 glow-emerald'
-            }`}
-          >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2.5">
-                <ShieldAlert
-                  className={`w-6 h-6 ${
-                    selectedSample.verdict === 'scam'
-                      ? 'text-rose-400'
-                      : selectedSample.verdict === 'suspicious'
-                      ? 'text-amber-400'
-                      : 'text-emerald-400'
-                  }`}
-                />
-                <div>
-                  <h3
-                    className={`text-base font-black ${
-                      selectedSample.verdict === 'scam'
-                        ? 'text-rose-300'
-                        : selectedSample.verdict === 'suspicious'
-                        ? 'text-amber-300'
-                        : 'text-emerald-300'
-                    }`}
-                  >
-                    VERDICT: {selectedSample.verdict.toUpperCase()} ({(selectedSample.confidence * 100).toFixed(0)}% CONFIDENCE)
-                  </h3>
-                  <span className="text-xs text-slate-300">
-                    Impersonated Brand: <strong>{selectedSample.spoofed_brand || 'None'}</strong>
-                  </span>
-                </div>
+        {/* Result */}
+        <div className="space-y-4">
+          {!result && !scanning && !error && (
+            <div className="h-full min-h-48 rounded-3xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/60 flex flex-col items-center justify-center text-center gap-2 p-6">
+              <HelpCircle className="w-7 h-7 text-slate-400" />
+              <p className="text-sm text-slate-500 dark:text-slate-400">
+                The verdict will appear here once you upload something.
+              </p>
+            </div>
+          )}
+
+          {scanning && (
+            <div className="h-full min-h-48 rounded-3xl border border-blue-200 dark:border-blue-900 bg-blue-50 dark:bg-blue-950/30 flex flex-col items-center justify-center gap-2 p-6">
+              <Loader2 className="w-7 h-7 text-blue-600 dark:text-blue-400 animate-spin" />
+              <p className="text-sm font-semibold text-blue-800 dark:text-blue-300">
+                Analysing the image…
+              </p>
+            </div>
+          )}
+
+          {error && (
+            <div className="rounded-3xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 p-5 flex gap-3">
+              <ImageOff className="w-5 h-5 text-slate-500 shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm font-bold text-slate-800 dark:text-slate-200">
+                  Could not analyse this image
+                </p>
+                <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">{error}</p>
               </div>
-
-              {selectedSample.tampering_detected && (
-                <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-rose-500/20 text-rose-300 border border-rose-500/40">
-                  DIGITAL FORGERY
-                </span>
-              )}
             </div>
-          </div>
+          )}
 
-          {/* OCR Extracted Text */}
-          <div className="glass-panel p-4 rounded-2xl border border-slate-800">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">
-              Gemini Vision OCR Extraction
-            </h4>
-            <div className="p-3 rounded-xl bg-slate-950/90 border border-slate-800 text-xs font-mono text-cyan-200 leading-relaxed">
-              {selectedSample.detected_text}
-            </div>
-          </div>
-
-          {/* Forensic Reasons */}
-          <div className="glass-panel p-4 rounded-2xl border border-slate-800">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">
-              Forensic Reasoning & Anomaly Signals
-            </h4>
-            <ul className="space-y-1.5">
-              {selectedSample.reasons.map((r, i) => (
-                <li key={i} className="flex items-start gap-2 text-xs text-slate-200">
-                  <span className="w-1.5 h-1.5 rounded-full bg-rose-400 mt-1.5 shrink-0" />
-                  <span>{r}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* Extracted Links / QR Payload */}
-          {selectedSample.extracted_links.length > 0 && (
-            <div className="glass-panel p-4 rounded-2xl border border-slate-800">
-              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2 flex items-center gap-1.5">
-                <Link2 className="w-3.5 h-3.5 text-cyan-400" /> Extracted URL & Domain Reputation
-              </h4>
-              <div className="space-y-1.5">
-                {selectedSample.extracted_links.map((link, idx) => (
-                  <div
-                    key={idx}
-                    className="p-2.5 rounded-xl bg-slate-950 border border-rose-900/40 text-xs font-mono text-rose-300 flex items-center justify-between"
-                  >
-                    <span className="truncate">{link}</span>
-                    <span className="px-2 py-0.5 rounded text-[10px] bg-rose-500/20 text-rose-400 font-bold ml-2">
-                      MALICIOUS SINK
-                    </span>
+          {result && v && (
+            <>
+              <div className={`rounded-3xl border p-5 ${v.bg}`}>
+                <div className="flex items-center gap-3">
+                  <v.Icon className={`w-7 h-7 ${v.tone}`} />
+                  <div>
+                    <p className={`text-lg font-black ${v.tone}`}>{v.label}</p>
+                    <p className="text-xs text-slate-600 dark:text-slate-400">
+                      Confidence {Math.round(result.confidence * 100)}%
+                      {result.spoofed_brand && ` · pretending to be ${result.spoofed_brand}`}
+                    </p>
                   </div>
-                ))}
+                </div>
+
+                {result.reasons.length > 0 && (
+                  <ul className="mt-3 space-y-1.5">
+                    {result.reasons.map((r, i) => (
+                      <li
+                        key={i}
+                        className="flex items-start gap-2 text-sm text-slate-700 dark:text-slate-300"
+                      >
+                        <span className="mt-1.5 w-1 h-1 rounded-full bg-current opacity-50 shrink-0" />
+                        <span>{r}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </div>
-            </div>
+
+              {result.detected_text && (
+                <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4">
+                  <p className="text-[11px] font-black uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                    Text found in the image
+                  </p>
+                  <p className="mt-1.5 text-sm text-slate-700 dark:text-slate-300 break-words">
+                    {result.detected_text}
+                  </p>
+                </div>
+              )}
+
+              {result.extracted_links.length > 0 && (
+                <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4">
+                  <p className="text-[11px] font-black uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                    Links found
+                  </p>
+                  <ul className="mt-1.5 space-y-1">
+                    {result.extracted_links.map((l, i) => (
+                      <li
+                        key={i}
+                        className="flex items-start gap-2 text-xs font-mono text-slate-700 dark:text-slate-300 break-all"
+                      >
+                        <Link2 className="w-3.5 h-3.5 shrink-0 mt-0.5 text-slate-400" />
+                        {l}
+                      </li>
+                    ))}
+                  </ul>
+                  <p className="mt-2 text-[11px] text-slate-500 dark:text-slate-400">
+                    Never open a link sent by someone who called you.
+                  </p>
+                </div>
+              )}
+
+              {result.tampering_detected && (
+                <div className="rounded-2xl border border-amber-200 dark:border-amber-900 bg-amber-50 dark:bg-amber-950/30 p-4 flex gap-2">
+                  <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                  <p className="text-sm text-amber-800 dark:text-amber-300">
+                    This image looks edited. Treat any amount or reference on it as unverified.
+                  </p>
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>

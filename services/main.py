@@ -87,7 +87,7 @@ async def analyze_lens_image(
 ):
     if file:
         content = await file.read()
-        return lens_engine.analyze_image_bytes(content)
+        return lens_engine.analyze_image_bytes(content, file.content_type or "image/jpeg")
     return lens_engine._heuristic_fallback(None)
 
 @app.get("/v1/reputation/{number_hash}")

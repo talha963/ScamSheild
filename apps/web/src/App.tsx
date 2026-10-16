@@ -2,10 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { Header, ActiveTab } from './components/Header';
 import { Footer } from './components/Footer';
 import { HomePage } from './components/HomePage/HomePage';
-import { CallCompanion } from './components/CallCompanion/CallCompanion';
 import { ScamCallDemo } from './components/ScamCallDemo/ScamCallDemo';
 import { LiveCallGuard } from './components/LiveCallGuard/LiveCallGuard';
-import { BankGuard } from './components/BankGuard/BankGuard';
+import { MockBank } from './components/MockBank/MockBank';
 import { ScamLens } from './components/ScamLens/ScamLens';
 import { ScamGym } from './components/ScamGym/ScamGym';
 import { ScamRadar } from './components/ScamRadar/ScamRadar';
@@ -123,7 +122,7 @@ export function App() {
               <LiveCallGuard />
             )}
 
-            {activeTab === 'mock-bank' && <BankGuard />}
+            {activeTab === 'mock-bank' && <MockBank />}
 
             {activeTab === 'scam-lens' && <ScamLens />}
 

@@ -420,7 +420,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateTab }) => {
           <div className="rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xs hover:shadow-md transition-all flex flex-col justify-between">
             <div className="h-56 overflow-hidden">
               <img
-                src="/family-safety-portrait.jpg"
+                src="./family-safety-portrait.jpg"
                 alt="Elderly Family Member Protected"
                 className="w-full h-full object-cover object-center"
               />
@@ -445,7 +445,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateTab }) => {
           <div className="rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xs hover:shadow-md transition-all flex flex-col justify-between">
             <div className="h-56 overflow-hidden">
               <img
-                src="/banking-circuit-breaker.jpg"
+                src="./banking-circuit-breaker.jpg"
                 alt="Bank Safety Lock"
                 className="w-full h-full object-cover object-center"
               />
@@ -470,7 +470,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateTab }) => {
           <div className="rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xs hover:shadow-md transition-all flex flex-col justify-between">
             <div className="h-56 overflow-hidden">
               <img
-                src="/scam-lens-scan.jpg"
+                src="./scam-lens-scan.jpg"
                 alt="Scan Fake Slip"
                 className="w-full h-full object-cover object-center"
               />

@@ -100,7 +100,27 @@ class MainActivity : Activity() {
             override fun shouldInterceptRequest(
                 view: WebView,
                 request: WebResourceRequest
-            ): WebResourceResponse? = assetLoader.shouldInterceptRequest(request.url)
+            ): WebResourceResponse? {
+                val intercepted = assetLoader.shouldInterceptRequest(request.url)
+                if (intercepted != null) return intercepted
+
+                // Fallback for root-relative assets (e.g. /family-safety-portrait.jpg)
+                val rawPath = request.url.path.orEmpty().trimStart('/')
+                return try {
+                    val stream = assets.open("web/$rawPath")
+                    val mimeType = when {
+                        rawPath.endsWith(".jpg") || rawPath.endsWith(".jpeg") -> "image/jpeg"
+                        rawPath.endsWith(".png") -> "image/png"
+                        rawPath.endsWith(".svg") -> "image/svg+xml"
+                        rawPath.endsWith(".css") -> "text/css"
+                        rawPath.endsWith(".js") -> "application/javascript"
+                        else -> "application/octet-stream"
+                    }
+                    WebResourceResponse(mimeType, "UTF-8", stream)
+                } catch (e: Exception) {
+                    null
+                }
+            }
 
             override fun shouldOverrideUrlLoading(view: WebView?, url: String?): Boolean {
                 // Keep in-app navigation inside the WebView

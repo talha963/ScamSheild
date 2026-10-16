@@ -1,6 +1,7 @@
 import base64
 import io
 import json
+import time
 import logging
 from typing import Optional, Dict, Any, List
 from PIL import Image
@@ -8,6 +9,8 @@ from services.shared.config import settings
 from services.shared.schemas import ScamLensAnalysisResponse
 
 logger = logging.getLogger("scamshield.lens")
+
+FALLBACK_MODELS = ["gemini-flash-latest", "gemini-3.5-flash"]
 
 LENS_PROMPT = """SYSTEM:
 You are ScamShield Lens, an expert computer vision forensic engine that inspects screenshots of SMS, WhatsApp messages, payment receipts, QR codes, and banking screens for fraud indicators.
@@ -42,7 +45,8 @@ class ScamLensEngine:
             except Exception as e:
                 logger.warning(f"Could not initialize GenAI Vision: {e}")
 
-    def analyze_image_bytes(self, image_bytes: bytes) -> ScamLensAnalysisResponse:
+    def analyze_image_bytes(self, image_bytes: bytes,
+                            mime_type: str = "image/jpeg") -> ScamLensAnalysisResponse:
         """
         Processes image through Gemini Vision and forensic filters.
         """
@@ -61,40 +65,65 @@ class ScamLensEngine:
             )
 
         if self.client:
-            try:
-                from google.genai import types
-                response = self.client.models.generate_content(
-                    model=settings.GEMINI_MODEL_LIVE,
-                    contents=[
-                        {"role": "user", "parts": [
-                            {"text": LENS_PROMPT},
-                            types.Part.from_bytes(data=image_bytes, mime_type="image/jpeg")
-                        ]}
-                    ],
-                    config={"response_mime_type": "application/json"}
-                )
-                data = json.loads(response.text.strip())
-                return ScamLensAnalysisResponse(**data)
-            except Exception as err:
-                logger.error(f"Gemini Vision call failed: {err}. Using heuristic fallback.")
+            from google.genai import types
+
+            # PIL knows the real format; the browser's content-type can be missing or wrong.
+            detected = f"image/{(image.format or '').lower()}" if image.format else mime_type
+            if detected not in ("image/jpeg", "image/png", "image/webp", "image/heic", "image/gif"):
+                detected = "image/jpeg"
+
+            contents = [types.Content(role="user", parts=[
+                types.Part.from_text(text=LENS_PROMPT),
+                types.Part.from_bytes(data=image_bytes, mime_type=detected),
+            ])]
+
+            # The flash models return 503 under load often enough to matter in a live demo,
+            # so try every model twice with a pause before admitting defeat.
+            models = list(dict.fromkeys([settings.GEMINI_MODEL_LIVE, *FALLBACK_MODELS]))
+            for attempt, model in enumerate(models * 2):
+                if attempt == len(models):
+                    time.sleep(2)
+                try:
+                    response = self.client.models.generate_content(
+                        model=model, contents=contents,
+                        config=types.GenerateContentConfig(
+                            response_mime_type="application/json", temperature=0),
+                    )
+                    return ScamLensAnalysisResponse(**json.loads(response.text.strip()))
+                except Exception as err:
+                    logger.warning(f"Scam Lens failed on {model}: {err}")
+
+            # Reached only when the model was available but every call failed.
+            return self._heuristic_fallback(image, busy=True)
 
         # Heuristic fallback for offline demo
         return self._heuristic_fallback(image)
 
-    def _heuristic_fallback(self, image: Image.Image) -> ScamLensAnalysisResponse:
-        # Check aspect ratio & color anomalies
-        width, height = image.size
+    def _heuristic_fallback(self, image: Optional[Image.Image],
+                            busy: bool = False) -> ScamLensAnalysisResponse:
+        """
+        Without a vision model we genuinely cannot read the image, so we must not pretend to.
+        Claiming "scam" for every upload would be worse than useless: one judge uploading a
+        harmless photo would show the whole verdict is theatre.
+
+        `busy` separates "the AI is overloaded, try again" from "no key is configured", because
+        the fix is completely different.
+        """
+        reasons = (
+            ["The AI vision service is busy right now. Please try the image again in a moment."]
+            if busy
+            else [
+                "This image was not analysed: the server has no AI vision key configured.",
+                "Set GEMINI_API_KEY on the server to get a real verdict.",
+            ]
+        )
         return ScamLensAnalysisResponse(
-            verdict="scam",
-            confidence=0.96,
-            detected_text="HBL ALERT: Your account has been suspended due to unverified CNIC. Click bit.ly/hbl-verify-urgent within 2 hours or permanent debit block.",
-            extracted_links=["https://bit.ly/hbl-verify-urgent -> resolves to scam-hbl-login.pk.xyz"],
-            tampering_detected=True,
-            spoofed_brand="Habib Bank Ltd (HBL)",
-            reasons=[
-                "High emotional pressure: 2-hour account forfeiture ultimatum",
-                "Phishing shortlink redirected to unauthorized third-party registrar",
-                "Mismatched system fonts in security timestamp field"
-            ],
-            qr_destination=None
+            verdict="suspicious",
+            confidence=0.0,
+            detected_text="",
+            extracted_links=[],
+            tampering_detected=False,
+            spoofed_brand=None,
+            reasons=reasons,
+            qr_destination=None,
         )

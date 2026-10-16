@@ -137,9 +137,51 @@ def execute_step_up_resolution(req: BankStepUpRequest):
         })
         return {"status": "released", "message": "Manual override confirmed"}
 
+    elif req.verification_method == "cancel_by_user":
+        hold["status"] = "cancelled_by_user"
+        audit_log.append({
+            "timestamp": now.isoformat(),
+            "action": "TRANSACTION_CANCELLED_MONEY_SAVED",
+            "hold_id": req.hold_id,
+            "amount_saved": hold["amount"],
+            "reason": "User cancelled transfer during 15-minute cooling-off period while suspecting scam call"
+        })
+        return {"status": "cancelled", "message": "Transaction safely cancelled. Money preserved in user account."}
+
     else:
         hold["status"] = "blocked"
         return {"status": "blocked", "message": "Transfer permanently cancelled"}
+
+@app.post("/holds/create-15min")
+@app.post("/bank/holds/create-15min")
+def create_15min_safety_hold(data: dict):
+    hold_id = f"hold_{uuid.uuid4().hex[:8]}"
+    now = datetime.now(timezone.utc)
+    amount = float(data.get("amount", 85000.0))
+    account_id = data.get("account_id", "acc_pk_9941")
+    payee_name = data.get("payee_name", "Unknown Payee")
+    payee_account = data.get("payee_account", "PK44MBL00098472910")
+
+    hold_record = {
+        "hold_id": hold_id,
+        "account_id": account_id,
+        "amount": amount,
+        "payee_name": payee_name,
+        "payee_account": payee_account,
+        "duration_seconds": 900,  # 15 minutes
+        "status": "cooling_off_escrow",
+        "reason": "ScamShield Phone Interceptor: High-risk urgency call in progress",
+        "created_at": now.isoformat()
+    }
+    holds_db[hold_id] = hold_record
+    audit_log.append({
+        "timestamp": now.isoformat(),
+        "action": "15_MIN_SAFETY_ESCROW_STARTED",
+        "hold_id": hold_id,
+        "amount": amount,
+        "payee": payee_name
+    })
+    return hold_record
 
 @app.post("/fraud-cases", response_model=FraudCaseReport)
 @app.post("/bank/fraud-cases", response_model=FraudCaseReport)

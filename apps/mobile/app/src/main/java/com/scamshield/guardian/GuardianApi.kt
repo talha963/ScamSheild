@@ -54,6 +54,8 @@ object GuardianApi {
         val conn = (URL("${serverUrl(context)}/v1/live/guardian/session/start").openConnection() as HttpURLConnection).apply {
             requestMethod = "POST"
             setRequestProperty("Content-Type", "application/json")
+            setRequestProperty("ngrok-skip-browser-warning", "1")
+            setRequestProperty("User-Agent", "ScamShield-Android")
             connectTimeout = 8000
             readTimeout = 15000
             doOutput = true
@@ -92,6 +94,8 @@ object GuardianApi {
         val conn = (URL("${serverUrl(context)}/v1/live/guardian/audio-chunk").openConnection() as HttpURLConnection).apply {
             requestMethod = "POST"
             setRequestProperty("Content-Type", "multipart/form-data; boundary=$boundary")
+            setRequestProperty("ngrok-skip-browser-warning", "1")
+            setRequestProperty("User-Agent", "ScamShield-Android")
             connectTimeout = 8000
             readTimeout = 60000   // transcription of a chunk can take a few seconds
             doOutput = true
@@ -128,6 +132,8 @@ object GuardianApi {
         val conn = (URL("${serverUrl(context)}/v1/live/guardian/cut-call").openConnection() as HttpURLConnection).apply {
             requestMethod = "POST"
             setRequestProperty("Content-Type", "application/json")
+            setRequestProperty("ngrok-skip-browser-warning", "1")
+            setRequestProperty("User-Agent", "ScamShield-Android")
             connectTimeout = 8000
             doOutput = true
         }

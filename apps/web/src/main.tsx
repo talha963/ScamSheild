@@ -21,7 +21,7 @@ if (typeof window !== 'undefined') {
 
     // 3. Bundled inside Android APK WebView (file protocol)
     if (window.location.protocol === 'file:') {
-      return 'https://chief-motherboard-webcast-ind.trycloudflare.com';
+      return 'https://americans-membrane-variation-thomas.trycloudflare.com';
     }
     // 4. In browser, relative proxying via Nginx/Vite handles /v1/
     return '';

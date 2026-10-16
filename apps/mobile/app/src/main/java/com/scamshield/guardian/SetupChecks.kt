@@ -104,6 +104,8 @@ object SetupChecks {
                     connectTimeout = 10000
                     readTimeout = 20000
                     useCaches = false
+                    setRequestProperty("ngrok-skip-browser-warning", "1")
+                    setRequestProperty("User-Agent", "ScamShield-Android")
                 }
                 val code = conn.responseCode
                 val body = try {
@@ -151,6 +153,8 @@ object SetupChecks {
                 requestMethod = "POST"
                 connectTimeout = 8000
                 readTimeout = 15000
+                setRequestProperty("ngrok-skip-browser-warning", "1")
+                setRequestProperty("User-Agent", "ScamShield-Android")
             }
             val code = conn.responseCode
             conn.disconnect()
