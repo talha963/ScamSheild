@@ -30,7 +30,7 @@
         "url": "http://scamshield-backend:8000/bank/dispatch/sms",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"guardian_phone\": \"{{ $json.guardian_phone }}\",\n  \"guardian_name\": \"{{ $json.guardian_name }}\",\n  \"hold_id\": \"{{ $json.hold_id }}\",\n  \"sms_text\": \"{{ $json.sms_body }}\"\n}",
+        "jsonBody": "={{ JSON.stringify({ guardian_phone: $json.guardian_phone, guardian_name: $json.guardian_name, hold_id: $json.hold_id, sms_text: $json.sms_body }) }}",
         "options": {
           "response": {
             "response": {
@@ -51,7 +51,7 @@
         "url": "http://scamshield-backend:8000/bank/dispatch/email",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"recipient_email\": \"{{ $json.guardian_email }}\",\n  \"recipient_name\": \"{{ $json.guardian_name }}\",\n  \"subject\": \"{{ $json.email_subject }}\",\n  \"hold_id\": \"{{ $json.hold_id }}\",\n  \"amount\": {{ $json.amount }},\n  \"email_html\": {{ JSON.stringify($json.email_html) }}\n}",
+        "jsonBody": "={{ JSON.stringify({ recipient_email: $json.guardian_email, recipient_name: $json.guardian_name, subject: $json.email_subject, hold_id: $json.hold_id, amount: $json.amount, email_html: $json.email_html }) }}",
         "options": {
           "response": {
             "response": {
