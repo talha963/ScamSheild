@@ -69,26 +69,87 @@ export const MockBank: React.FC<MockBankProps> = ({
   const [transferAmount, setTransferAmount] = useState<string>('85000');
   const [transferPurpose, setTransferPurpose] = useState<string>('Urgent Security Clearance (Coerced)');
 
-  // 15-Minute Safety Escrow State
-  const [is15MinHoldActive, setIs15MinHoldActive] = useState<boolean>(false);
-  const [countdownSeconds, setCountdownSeconds] = useState<number>(900); // 15:00 minutes (900 seconds)
+  // 15-Minute Safety Escrow State with LocalStorage & Background Persistence
+  const [is15MinHoldActive, setIs15MinHoldActive] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('scamshield_active_hold');
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (parsed && parsed.expiresAt && parsed.expiresAt > Date.now()) {
+            return true;
+          }
+        } catch (e) {}
+      }
+    }
+    return false;
+  });
+
+  const [countdownSeconds, setCountdownSeconds] = useState<number>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('scamshield_active_hold');
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (parsed && parsed.expiresAt && parsed.expiresAt > Date.now()) {
+            return Math.max(1, Math.floor((parsed.expiresAt - Date.now()) / 1000));
+          }
+        } catch (e) {}
+      }
+    }
+    return 900;
+  });
+
   const [heldTransfer, setHeldTransfer] = useState<{
     id: string;
     amount: number;
     recipientName: string;
     accountNumber: string;
     bankName: string;
-  } | null>(null);
+    expiresAt?: number;
+  } | null>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('scamshield_active_hold');
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (parsed && parsed.expiresAt && parsed.expiresAt > Date.now()) {
+            return parsed;
+          }
+        } catch (e) {}
+      }
+    }
+    return null;
+  });
 
   // Success Notification Banner
   const [savedNotification, setSavedNotification] = useState<string | null>(null);
   const [guardianNotified, setGuardianNotified] = useState<boolean>(false);
 
   // Trusted Family Guardian Delegation (n8n Multi-Channel Alert: SMS + Email)
-  const [guardianName, setGuardianName] = useState<string>('Hamza Tariq (Son)');
-  const [guardianPhone, setGuardianPhone] = useState<string>('+92 300 9876543');
-  const [guardianEmail, setGuardianEmail] = useState<string>('hamza.tariq@gmail.com');
+  const [guardianName, setGuardianName] = useState<string>(() => {
+    return (typeof window !== 'undefined' && localStorage.getItem('scamshield_guardian_name')) || 'Hamza Tariq (Son)';
+  });
+  const [guardianPhone, setGuardianPhone] = useState<string>(() => {
+    return (typeof window !== 'undefined' && localStorage.getItem('scamshield_guardian_phone')) || '+92 300 9876543';
+  });
+  const [guardianEmail, setGuardianEmail] = useState<string>(() => {
+    return (typeof window !== 'undefined' && localStorage.getItem('scamshield_guardian_email')) || 'tk706051@gmail.com';
+  });
   const [isEditingGuardian, setIsEditingGuardian] = useState<boolean>(false);
+
+  const updateGuardianName = (val: string) => {
+    setGuardianName(val);
+    if (typeof window !== 'undefined') localStorage.setItem('scamshield_guardian_name', val);
+  };
+  const updateGuardianPhone = (val: string) => {
+    setGuardianPhone(val);
+    if (typeof window !== 'undefined') localStorage.setItem('scamshield_guardian_phone', val);
+  };
+  const updateGuardianEmail = (val: string) => {
+    setGuardianEmail(val);
+    if (typeof window !== 'undefined') localStorage.setItem('scamshield_guardian_email', val);
+  };
 
   // Live Multi-Channel Gateway Settings & Preview State
   const [showGatewayModal, setShowGatewayModal] = useState<boolean>(false);
@@ -104,48 +165,159 @@ export const MockBank: React.FC<MockBankProps> = ({
     twilio_sid?: string;
     twilio_token?: string;
     twilio_from?: string;
-  }>({
-    smtp_host: 'smtp.gmail.com',
-    smtp_port: 587,
-    smtp_user: '',
-    smtp_password: '',
-    smtp_from: '',
-    smtp_password_configured: false,
-    twilio_sid: '',
-    twilio_token: '',
-    twilio_from: '',
+  }>(() => {
+    if (typeof window !== 'undefined') {
+      const cached = localStorage.getItem('scamshield_gateway_config');
+      if (cached) {
+        try {
+          return JSON.parse(cached);
+        } catch (e) {}
+      }
+    }
+    return {
+      smtp_host: 'smtp.gmail.com',
+      smtp_port: 587,
+      smtp_user: 'tk706051@gmail.com',
+      smtp_password: '',
+      smtp_from: '',
+      smtp_password_configured: true,
+      twilio_sid: '',
+      twilio_token: '',
+      twilio_from: '',
+    };
   });
 
   const [testEmailStatus, setTestEmailStatus] = useState<{ loading: boolean; success?: boolean; message?: string } | null>(null);
   const [testSmsStatus, setTestSmsStatus] = useState<{ loading: boolean; success?: boolean; message?: string } | null>(null);
   const [lastDispatchedHold, setLastDispatchedHold] = useState<any>(null);
 
-  // Load saved gateway settings on mount
+  // Load saved gateway settings on mount & check for existing active holds
   useEffect(() => {
     fetch('/bank/notifications/config')
       .then((res) => res.json())
       .then((data) => {
         if (data) {
           setGatewayConfig(data);
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('scamshield_gateway_config', JSON.stringify(data));
+          }
           if (data.smtp_host?.includes('outlook')) setSmtpPreset('outlook');
           else if (data.smtp_host?.includes('gmail')) setSmtpPreset('gmail');
           else setSmtpPreset('custom');
+
+          if (data.smtp_user) {
+            setGuardianEmail((prev) => {
+              if (!prev || prev === 'hamza.tariq@gmail.com') {
+                if (typeof window !== 'undefined') localStorage.setItem('scamshield_guardian_email', data.smtp_user);
+                return data.smtp_user;
+              }
+              return prev;
+            });
+          }
+        }
+      })
+      .catch(() => {});
+
+    // Also check backend for any active hold on mount
+    fetch('/bank/holds/active')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data && data.has_hold && data.hold) {
+          const h = data.hold;
+          if (h.status === 'cooling_off_escrow') {
+            setIs15MinHoldActive(true);
+            setHeldTransfer({
+              id: h.hold_id,
+              amount: h.amount,
+              recipientName: h.payee_name || 'Ali Raza (Unverified Account)',
+              accountNumber: h.payee_account || 'PK44MBL00098472910',
+              bankName: 'Private Mule Bank',
+            });
+          }
         }
       })
       .catch(() => {});
   }, []);
 
+  // Real-time poller: Automatically catches 1-Tap Decisions (Reversal or Approval) from Gmail or SMS links
+  useEffect(() => {
+    if (!is15MinHoldActive || !heldTransfer?.id) return;
+
+    const currentHoldId = heldTransfer.id;
+
+    const interval = setInterval(async () => {
+      try {
+        const res = await fetch(`/bank/holds/active?hold_id=${encodeURIComponent(currentHoldId)}`);
+        const data = await res.json();
+        if (data && data.has_hold && data.hold) {
+          // STRICT CHECK: The returned hold MUST match this specific transaction ID
+          if (data.hold.hold_id !== currentHoldId) {
+            return;
+          }
+
+          const status = data.hold.status;
+          if (status === 'reversed_by_guardian') {
+            // Guardian tapped Red "REVERSE & REFUND" button
+            setIs15MinHoldActive(false);
+            setHeldTransfer(null);
+            setCountdownSeconds(900);
+            if (typeof window !== 'undefined') {
+              localStorage.removeItem('scamshield_active_hold');
+            }
+            setSavedNotification(
+              `🛡️ High-Risk Transfer REVERSED by Guardian via Gmail! PKR ${Number(data.hold.amount || 85000).toLocaleString()} 100% restored to your balance.`
+            );
+            setTimeout(() => setSavedNotification(null), 12000);
+          } else if (status === 'released') {
+            // Guardian tapped Green "Approve Legitimate Transfer" button
+            setIs15MinHoldActive(false);
+            setHeldTransfer(null);
+            setCountdownSeconds(900);
+            setBalance((prev) => Math.max(0, prev - (data.hold.amount || 85000)));
+            if (typeof window !== 'undefined') {
+              localStorage.removeItem('scamshield_active_hold');
+            }
+            setSavedNotification(
+              `✅ Transfer APPROVED by Family Guardian via Gmail! PKR ${Number(data.hold.amount || 85000).toLocaleString()} released to payee.`
+            );
+            setTimeout(() => setSavedNotification(null), 12000);
+          } else if (status === 'cancelled_by_user' || status === 'blocked') {
+            setIs15MinHoldActive(false);
+            setHeldTransfer(null);
+            setCountdownSeconds(900);
+            if (typeof window !== 'undefined') {
+              localStorage.removeItem('scamshield_active_hold');
+            }
+          }
+        }
+      } catch (e) {}
+    }, 1500);
+
+    return () => clearInterval(interval);
+  }, [is15MinHoldActive, heldTransfer?.id]);
+
   const handleSaveGatewayConfig = async () => {
     try {
+      const cleanPassword = (gatewayConfig.smtp_password || '').trim().replace(/\s+/g, '');
+      const cleanUser = (gatewayConfig.smtp_user || guardianEmail).trim();
+      const payload = {
+        ...gatewayConfig,
+        smtp_user: cleanUser,
+        smtp_password: cleanPassword,
+      };
+
       const res = await fetch('/bank/notifications/config', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(gatewayConfig),
+        body: JSON.stringify(payload),
       });
       const data = await res.json();
       if (data.config) {
         setGatewayConfig(data.config);
-        setSavedNotification('✓ Email & SMS Gateway settings saved successfully.');
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('scamshield_gateway_config', JSON.stringify(data.config));
+        }
+        setSavedNotification('✓ Email & SMS Gateway settings saved permanently.');
         setTimeout(() => setSavedNotification(null), 4000);
       }
     } catch (e) {}
@@ -154,17 +326,43 @@ export const MockBank: React.FC<MockBankProps> = ({
   const handleTestEmail = async () => {
     setTestEmailStatus({ loading: true });
     try {
+      const cleanPassword = (gatewayConfig.smtp_password || '').trim().replace(/\s+/g, '');
+      const cleanUser = (gatewayConfig.smtp_user || guardianEmail).trim();
+      const targetEmail = (gatewayConfig.smtp_user || guardianEmail).trim();
+      const payload = {
+        ...gatewayConfig,
+        smtp_host: gatewayConfig.smtp_host || 'smtp.gmail.com',
+        smtp_port: gatewayConfig.smtp_port || 587,
+        smtp_user: cleanUser,
+        smtp_password: cleanPassword,
+        email: targetEmail,
+      };
+
       const res = await fetch('/bank/notifications/test-email', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: guardianEmail }),
+        body: JSON.stringify(payload),
       });
       const data = await res.json();
+      if (data.success) {
+        setGatewayConfig((prev) => ({
+          ...prev,
+          smtp_user: cleanUser,
+          smtp_password_configured: true,
+        }));
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('scamshield_gateway_config', JSON.stringify({
+            ...gatewayConfig,
+            smtp_user: cleanUser,
+            smtp_password_configured: true,
+          }));
+        }
+      }
       setTestEmailStatus({
         loading: false,
         success: data.success,
         message: data.success
-          ? `✓ Rich HTML alert delivered to ${guardianEmail}! Check your inbox.`
+          ? `✓ Rich HTML alert delivered to ${targetEmail}! Check your inbox now.`
           : `⚠️ ${data.message || data.error || 'Failed to deliver'}`,
       });
     } catch (err: any) {
@@ -269,12 +467,14 @@ export const MockBank: React.FC<MockBankProps> = ({
     if (simulatedCallActive && isScammerDetected) {
       // 1. Immediately freeze the transaction in 15-Minute Safety Escrow
       const txnId = `TXN-${Math.floor(1000 + Math.random() * 9000)}`;
+      const expiresAt = Date.now() + 900 * 1000;
       const holdData = {
         id: txnId,
         amount: numAmount,
         recipientName: recipientDetails.name,
         accountNumber: recipientDetails.account,
         bankName: recipientDetails.bank,
+        expiresAt,
       };
 
       setHeldTransfer(holdData);
@@ -282,6 +482,9 @@ export const MockBank: React.FC<MockBankProps> = ({
       setCountdownSeconds(900); // 15 minutes
       setGuardianNotified(false);
       setSavedNotification(null);
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('scamshield_active_hold', JSON.stringify(holdData));
+      }
 
       // Add to transaction log as frozen
       setHistory([
@@ -303,6 +506,7 @@ export const MockBank: React.FC<MockBankProps> = ({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          hold_id: txnId,
           amount: numAmount,
           payee_name: recipientDetails.name,
           payee_account: recipientDetails.account,
@@ -316,6 +520,9 @@ export const MockBank: React.FC<MockBankProps> = ({
           if (data && data.hold_id) {
             setHeldTransfer((prev) => (prev ? { ...prev, id: data.hold_id } : prev));
             setLastDispatchedHold(data);
+            if (typeof window !== 'undefined') {
+              localStorage.setItem('scamshield_active_hold', JSON.stringify({ ...holdData, id: data.hold_id }));
+            }
           }
         })
         .catch(() => {});
@@ -344,6 +551,10 @@ export const MockBank: React.FC<MockBankProps> = ({
     if (!heldTransfer) return;
 
     const savedAmount = heldTransfer.amount;
+
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('scamshield_active_hold');
+    }
 
     // Update history
     setHistory((prev) =>
@@ -388,6 +599,10 @@ export const MockBank: React.FC<MockBankProps> = ({
     const targetHoldId = heldTransfer.id;
     const savedAmount = heldTransfer.amount;
 
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('scamshield_active_hold');
+    }
+
     try {
       await fetch(`/bank/guardian-decision?action=block&hold_id=${targetHoldId}&guardian=${encodeURIComponent(guardianName)}`);
     } catch (e) {}
@@ -414,6 +629,9 @@ export const MockBank: React.FC<MockBankProps> = ({
   // What happens if 15 minutes expire without cancellation
   const handleHoldExpired = () => {
     if (!heldTransfer) return;
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('scamshield_active_hold');
+    }
     setBalance((prev) => Math.max(0, prev - heldTransfer.amount));
     setHistory((prev) =>
       prev.map((t) =>
@@ -760,7 +978,7 @@ export const MockBank: React.FC<MockBankProps> = ({
                     <input
                       type="text"
                       value={guardianName}
-                      onChange={(e) => setGuardianName(e.target.value)}
+                      onChange={(e) => updateGuardianName(e.target.value)}
                       className="w-full text-xs font-medium bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-2.5 py-1.5 text-slate-900 dark:text-white"
                     />
                   </div>
@@ -769,7 +987,7 @@ export const MockBank: React.FC<MockBankProps> = ({
                     <input
                       type="text"
                       value={guardianPhone}
-                      onChange={(e) => setGuardianPhone(e.target.value)}
+                      onChange={(e) => updateGuardianPhone(e.target.value)}
                       className="w-full text-xs font-mono bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-2.5 py-1.5 text-slate-900 dark:text-white"
                     />
                   </div>
@@ -778,7 +996,7 @@ export const MockBank: React.FC<MockBankProps> = ({
                     <input
                       type="email"
                       value={guardianEmail}
-                      onChange={(e) => setGuardianEmail(e.target.value)}
+                      onChange={(e) => updateGuardianEmail(e.target.value)}
                       className="w-full text-xs font-mono bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-2.5 py-1.5 text-slate-900 dark:text-white"
                     />
                   </div>
@@ -804,7 +1022,7 @@ export const MockBank: React.FC<MockBankProps> = ({
                 {gatewayConfig.smtp_password_configured ? (
                   <span className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-bold">
                     <CheckCircle className="w-3.5 h-3.5" />
-                    Live SMTP Active (Real email delivers to {guardianEmail})
+                    Live SMTP Connected ({gatewayConfig.smtp_user || guardianEmail})
                   </span>
                 ) : (
                   <span className="flex items-center gap-1 text-amber-600 dark:text-amber-400 font-medium">
@@ -816,7 +1034,7 @@ export const MockBank: React.FC<MockBankProps> = ({
                   onClick={() => setShowGatewayModal(true)}
                   className="text-cyan-600 dark:text-cyan-400 font-bold hover:underline cursor-pointer text-[10px] flex items-center gap-0.5"
                 >
-                  <span>Configure</span>
+                  <span>{gatewayConfig.smtp_password_configured ? 'Gateway Settings' : 'Configure'}</span>
                   <ArrowRight className="w-2.5 h-2.5" />
                 </button>
               </div>
@@ -1193,10 +1411,20 @@ export const MockBank: React.FC<MockBankProps> = ({
                 </button>
               </div>
 
-              {smtpPreset === 'gmail' && (
-                <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 text-[11px] text-amber-800 dark:text-amber-300 leading-relaxed">
-                  💡 <strong>Gmail Tip:</strong> Use your regular Gmail address and a 16-character <strong>Google App Password</strong> (generate at <em>Google Account &rarr; Security &rarr; 2-Step Verification &rarr; App Passwords</em>).
+              {gatewayConfig.smtp_password_configured ? (
+                <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-800 text-[11px] text-emerald-800 dark:text-emerald-200 flex items-center gap-2">
+                  <CheckCircle className="w-4 h-4 text-emerald-500 shrink-0" />
+                  <div>
+                    <strong className="block font-bold">✓ Gateway Configured &amp; Active</strong>
+                    <span>Live emergency email alerts will be dispatched using <strong>{gatewayConfig.smtp_user || 'your email'}</strong> to <strong>{guardianEmail}</strong>.</span>
+                  </div>
                 </div>
+              ) : (
+                smtpPreset === 'gmail' && (
+                  <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 text-[11px] text-amber-800 dark:text-amber-300 leading-relaxed">
+                    💡 <strong>Gmail Tip:</strong> Use your regular Gmail address and a 16-character <strong>Google App Password</strong> (generate at <em>Google Account &rarr; Security &rarr; 2-Step Verification &rarr; App Passwords</em>).
+                  </div>
+                )
               )}
             </div>
 
@@ -1264,7 +1492,7 @@ export const MockBank: React.FC<MockBankProps> = ({
             <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 space-y-2">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold text-slate-900 dark:text-white">
-                  Verify Live Delivery to: <strong className="text-blue-500 font-mono">{guardianEmail}</strong>
+                  Verify Live Delivery to: <strong className="text-blue-500 font-mono">{gatewayConfig.smtp_user || guardianEmail}</strong>
                 </span>
                 <button
                   type="button"

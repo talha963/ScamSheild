@@ -12,6 +12,7 @@
       "name": "Webhook: Scam Call Alert Trigger",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
+      "webhookId": "40d25721-a53b-4179-8808-0130db99cf2f",
       "position": [220, 320]
     },
     {
@@ -29,8 +30,28 @@
         "method": "POST",
         "url": "http://scamshield-backend:8000/bank/dispatch/sms",
         "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ guardian_phone: $json.guardian_phone, guardian_name: $json.guardian_name, hold_id: $json.hold_id, sms_text: $json.sms_body }) }}",
+        "contentType": "json",
+        "specifyBody": "keypair",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "guardian_phone",
+              "value": "={{ $json.guardian_phone }}"
+            },
+            {
+              "name": "guardian_name",
+              "value": "={{ $json.guardian_name }}"
+            },
+            {
+              "name": "hold_id",
+              "value": "={{ $json.hold_id }}"
+            },
+            {
+              "name": "sms_text",
+              "value": "={{ $json.sms_body }}"
+            }
+          ]
+        },
         "options": {
           "response": {
             "response": {
@@ -50,8 +71,36 @@
         "method": "POST",
         "url": "http://scamshield-backend:8000/bank/dispatch/email",
         "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ recipient_email: $json.guardian_email, recipient_name: $json.guardian_name, subject: $json.email_subject, hold_id: $json.hold_id, amount: $json.amount, email_html: $json.email_html }) }}",
+        "contentType": "json",
+        "specifyBody": "keypair",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "recipient_email",
+              "value": "={{ $json.guardian_email }}"
+            },
+            {
+              "name": "recipient_name",
+              "value": "={{ $json.guardian_name }}"
+            },
+            {
+              "name": "subject",
+              "value": "={{ $json.email_subject }}"
+            },
+            {
+              "name": "hold_id",
+              "value": "={{ $json.hold_id }}"
+            },
+            {
+              "name": "amount",
+              "value": "={{ $json.amount }}"
+            },
+            {
+              "name": "email_html",
+              "value": "={{ $json.email_html }}"
+            }
+          ]
+        },
         "options": {
           "response": {
             "response": {
@@ -77,6 +126,7 @@
       "name": "Webhook: Guardian Decision Click (SMS/Email)",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
+      "webhookId": "7bfa4891-628d-4f18-bb52-5a2a1975e52c",
       "position": [220, 680]
     },
     {
@@ -112,8 +162,28 @@
         "method": "POST",
         "url": "http://scamshield-backend:8000/bank/step-up",
         "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={\n  \"hold_id\": \"{{ $json.query.hold_id }}\",\n  \"verification_method\": \"reverse_by_guardian\",\n  \"authorized_by\": \"Family Guardian: {{ $json.query.guardian || 'Hamza Tariq' }}\",\n  \"comments\": \"Transaction reversed immediately by family guardian via emergency SMS / Email link\"\n}",
+        "contentType": "json",
+        "specifyBody": "keypair",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "hold_id",
+              "value": "={{ $json.query.hold_id }}"
+            },
+            {
+              "name": "verification_method",
+              "value": "reverse_by_guardian"
+            },
+            {
+              "name": "authorized_by",
+              "value": "={{ 'Family Guardian: ' + ($json.query.guardian || 'Hamza Tariq') }}"
+            },
+            {
+              "name": "comments",
+              "value": "Transaction reversed immediately by family guardian via emergency SMS / Email link"
+            }
+          ]
+        },
         "options": {
           "response": {
             "response": {
@@ -154,8 +224,28 @@
         "method": "POST",
         "url": "http://scamshield-backend:8000/bank/step-up",
         "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={\n  \"hold_id\": \"{{ $json.query.hold_id }}\",\n  \"verification_method\": \"guardian_approval\",\n  \"authorized_by\": \"Family Guardian: {{ $json.query.guardian || 'Hamza Tariq' }}\",\n  \"comments\": \"Legitimate payment approved by family guardian\"\n}",
+        "contentType": "json",
+        "specifyBody": "keypair",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "hold_id",
+              "value": "={{ $json.query.hold_id }}"
+            },
+            {
+              "name": "verification_method",
+              "value": "guardian_approval"
+            },
+            {
+              "name": "authorized_by",
+              "value": "={{ 'Family Guardian: ' + ($json.query.guardian || 'Hamza Tariq') }}"
+            },
+            {
+              "name": "comments",
+              "value": "Legitimate payment approved by family guardian"
+            }
+          ]
+        },
         "options": {
           "response": {
             "response": {

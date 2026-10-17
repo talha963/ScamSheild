@@ -46,20 +46,23 @@ def get_notification_config(mask_secrets: bool = True) -> Dict[str, Any]:
         except Exception:
             pass
 
+    # Determine whether real credentials exist
+    has_smtp = bool(config.get("smtp_user") and config.get("smtp_password"))
+    has_twilio = bool(config.get("twilio_sid") and config.get("twilio_token"))
+
     if mask_secrets:
         safe_copy = dict(config)
-        if safe_copy["smtp_password"]:
-            safe_copy["smtp_password_configured"] = True
+        safe_copy["smtp_password_configured"] = has_smtp
+        if safe_copy.get("smtp_password"):
             safe_copy["smtp_password"] = "••••••••••••••••"
-        else:
-            safe_copy["smtp_password_configured"] = False
-        if safe_copy["twilio_token"]:
-            safe_copy["twilio_token_configured"] = True
+        
+        safe_copy["twilio_token_configured"] = has_twilio
+        if safe_copy.get("twilio_token"):
             safe_copy["twilio_token"] = "••••••••••••••••"
-        else:
-            safe_copy["twilio_token_configured"] = False
         return safe_copy
 
+    config["smtp_password_configured"] = has_smtp
+    config["twilio_token_configured"] = has_twilio
     return config
 
 def save_notification_config(new_config: Dict[str, Any]) -> Dict[str, Any]:
@@ -68,15 +71,26 @@ def save_notification_config(new_config: Dict[str, Any]) -> Dict[str, Any]:
     """
     current = get_notification_config(mask_secrets=False)
     
-    # Update fields that were provided (don't overwrite with masked string)
+    # Update fields that were provided (don't overwrite with masked string or transient flags)
     for k, v in new_config.items():
-        if k in ["smtp_password", "twilio_token"] and v.startswith("••"):
+        if k in ["smtp_password_configured", "twilio_token_configured"]:
             continue
+        if k in ["smtp_password", "twilio_token"] and isinstance(v, str) and v.startswith("••"):
+            continue
+        if k == "smtp_password" and isinstance(v, str):
+            v = v.strip().replace(" ", "")
+        if k in ["smtp_user", "smtp_host", "smtp_from"] and isinstance(v, str):
+            v = v.strip()
         current[k] = v
+
+    # Remove transient computed flags before writing to disk
+    to_save = dict(current)
+    to_save.pop("smtp_password_configured", None)
+    to_save.pop("twilio_token_configured", None)
 
     CONFIG_FILE.parent.mkdir(parents=True, exist_ok=True)
     with open(CONFIG_FILE, "w", encoding="utf-8") as f:
-        json.dump(current, f, indent=2)
+        json.dump(to_save, f, indent=2)
 
     return get_notification_config(mask_secrets=True)
 
@@ -99,8 +113,8 @@ def generate_guardian_alert(
     cfg = get_notification_config(mask_secrets=False)
     host = public_host or cfg.get("public_host") or "https://flatbed-carve-imprint.ngrok-free.dev"
 
-    reverse_url = f"{host}/webhook/guardian-decision?action=block&hold_id={hold_id}&guardian={urllib.parse.quote(guardian_name)}"
-    approve_url = f"{host}/webhook/guardian-decision?action=approve&hold_id={hold_id}&guardian={urllib.parse.quote(guardian_name)}"
+    reverse_url = f"{host}/webhook/guardian-decision?action=block&hold_id={hold_id}&guardian={urllib.parse.quote(guardian_name)}&ngrok-skip-browser-warning=true"
+    approve_url = f"{host}/webhook/guardian-decision?action=approve&hold_id={hold_id}&guardian={urllib.parse.quote(guardian_name)}&ngrok-skip-browser-warning=true"
 
     # Native SMS text
     sms_body = (
@@ -272,24 +286,30 @@ def send_real_email(
     to_email: str,
     subject: str,
     html_content: str,
-    text_content: Optional[str] = None
+    text_content: Optional[str] = None,
+    override_config: Optional[Dict[str, Any]] = None
 ) -> Dict[str, Any]:
     """
     Sends an actual email to `to_email` using the configured SMTP gateway.
     """
     cfg = get_notification_config(mask_secrets=False)
-    host = cfg.get("smtp_host")
-    port = int(cfg.get("smtp_port", 587))
-    user = cfg.get("smtp_user")
-    password = cfg.get("smtp_password")
-    from_addr = cfg.get("smtp_from") or user or "alerts@scamshield.org"
+    if override_config:
+        for k, v in override_config.items():
+            if v and not (isinstance(v, str) and v.startswith("••")):
+                cfg[k] = v
+
+    host = cfg.get("smtp_host") or "smtp.gmail.com"
+    port = int(cfg.get("smtp_port") or 587)
+    user = (cfg.get("smtp_user") or "").strip()
+    password = (cfg.get("smtp_password") or "").strip().replace(" ", "")
+    from_addr = (cfg.get("smtp_from") or "").strip() or user or "alerts@scamshield.org"
     use_tls = cfg.get("smtp_use_tls", True)
 
     if not host or not user or not password:
         return {
             "success": False,
             "status": "unconfigured",
-            "message": "SMTP credentials (user/password) are not configured. Please save your SMTP settings in Mock Bank settings.",
+            "message": "SMTP credentials (user/password) are not configured. Please enter your Gmail/Outlook email and App Password, then click Save Settings.",
             "recipient": to_email
         }
 
@@ -320,6 +340,14 @@ def send_real_email(
             "message": f"Successfully delivered rich email alert to {to_email}",
             "recipient": to_email,
             "timestamp": datetime.now(timezone.utc).isoformat()
+        }
+    except smtplib.SMTPAuthenticationError as e:
+        return {
+            "success": False,
+            "status": "auth_error",
+            "error": str(e),
+            "message": "Authentication failed. For Gmail, make sure you are using a 16-character Google App Password (from https://myaccount.google.com/apppasswords), NOT your normal Gmail login password.",
+            "recipient": to_email
         }
     except Exception as e:
         return {

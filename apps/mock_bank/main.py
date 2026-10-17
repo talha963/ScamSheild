@@ -19,6 +19,14 @@ app = FastAPI(
     version="1.0.0"
 )
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 # In-memory storage for mock bank state
 accounts_db: Dict[str, BankAccount] = {
     "acc_pk_9941": BankAccount(
@@ -107,11 +115,19 @@ def execute_step_up_resolution(req: BankStepUpRequest):
     """
     Called upon Guardian approval or branch callback verification.
     """
+    now = datetime.now(timezone.utc)
     if req.hold_id not in holds_db:
-        raise HTTPException(status_code=404, detail="Hold reference not found")
+        holds_db[req.hold_id] = {
+            "hold_id": req.hold_id,
+            "account_id": "acc_pk_9941",
+            "amount": 85000.0,
+            "status": "cooling_off_escrow",
+            "payee_name": "Ali Raza (Unverified Mule Account)",
+            "guardian_name": req.authorized_by or "Family Guardian",
+            "created_at": now.isoformat()
+        }
 
     hold = holds_db[req.hold_id]
-    now = datetime.now(timezone.utc)
 
     if req.verification_method == "guardian_approval":
         hold["status"] = "released"
@@ -169,7 +185,7 @@ from services.notifications.dispatcher import (
 @app.post("/holds/create-15min")
 @app.post("/bank/holds/create-15min")
 def create_15min_safety_hold(data: dict):
-    hold_id = f"hold_{uuid.uuid4().hex[:8]}"
+    hold_id = data.get("hold_id") or f"hold_{uuid.uuid4().hex[:8]}"
     now = datetime.now(timezone.utc)
     amount = float(data.get("amount", 85000.0))
     account_id = data.get("account_id", "acc_pk_9941")
@@ -303,7 +319,11 @@ def test_send_email(data: dict):
     """
     Sends a test rich HTML alert to the specified recipient email.
     """
-    to_email = data.get("email") or "hamza.tariq@gmail.com"
+    # 1. If credentials were provided in the test payload, persist them automatically!
+    if data.get("smtp_user") or data.get("smtp_password"):
+        save_notification_config(data)
+
+    to_email = data.get("email") or data.get("smtp_user") or "hamza.tariq@gmail.com"
     dummy_hold = f"test_{uuid.uuid4().hex[:6]}"
     alert = generate_guardian_alert(
         hold_id=dummy_hold,
@@ -318,7 +338,8 @@ def test_send_email(data: dict):
         to_email=to_email,
         subject=f"[Test] {alert['email_subject']}",
         html_content=alert["email_html"],
-        text_content=alert["sms_body"]
+        text_content=alert["sms_body"],
+        override_config=data
     )
     audit_log.append({
         "timestamp": datetime.now(timezone.utc).isoformat(),
@@ -378,6 +399,7 @@ def preview_email_html(hold_id: str):
     )
     return HTMLResponse(content=sample["email_html"], status_code=200)
 
+@app.get("/webhook/guardian-decision", response_class=HTMLResponse)
 @app.get("/guardian-decision", response_class=HTMLResponse)
 @app.get("/bank/guardian-decision", response_class=HTMLResponse)
 def handle_guardian_decision(action: str = "block", hold_id: str = "", guardian: str = "Family Guardian"):
@@ -389,7 +411,7 @@ def handle_guardian_decision(action: str = "block", hold_id: str = "", guardian:
 
     if hold_id in holds_db:
         hold = holds_db[hold_id]
-        amount_saved = hold["amount"]
+        amount_saved = hold.get("amount", 85000.0)
         if action == "block":
             hold["status"] = "reversed_by_guardian"
             audit_log.append({
@@ -408,6 +430,24 @@ def handle_guardian_decision(action: str = "block", hold_id: str = "", guardian:
                 "hold_id": hold_id,
                 "authorized_by": f"Family Guardian: {guardian}"
             })
+    else:
+        # Register hold so client polling catches reversal immediately
+        if action == "block":
+            holds_db[hold_id] = {
+                "hold_id": hold_id,
+                "amount": amount_saved,
+                "status": "reversed_by_guardian",
+                "guardian_name": guardian,
+                "updated_at": now.isoformat()
+            }
+            audit_log.append({
+                "timestamp": now.isoformat(),
+                "action": "TRANSACTION_REVERSED_MONEY_SAVED",
+                "hold_id": hold_id,
+                "amount_saved": amount_saved,
+                "authorized_by": f"Family Guardian: {guardian}",
+                "reason": "1-Tap Reversal link clicked from SMS / Email"
+            })
 
     if action == "block":
         return HTMLResponse(content=f"""<!DOCTYPE html>
@@ -423,16 +463,16 @@ def handle_guardian_decision(action: str = "block", hold_id: str = "", guardian:
       🛡️
     </div>
     <span style="display: inline-block; padding: 5px 12px; background: rgba(16, 185, 129, 0.2); border: 1px solid #10b981; border-radius: 100px; color: #6ee7b7; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px;">
-      100% Protected & Refunded
+      100% Protected &amp; Refunded
     </span>
     <h1 style="margin: 0 0 10px; font-size: 22px; font-weight: 900; color: #ffffff;">
       Transaction Reversed Successfully!
     </h1>
-    <p style="margin: 0 0 24px; font-size: 14px; color: #94a3b8; line-height: 1.5;">
+    <p style="margin: 0 0 20px; font-size: 14px; color: #94a3b8; line-height: 1.5;">
       Thank you, <strong>{guardian}</strong>. The 15-minute escrow hold has been cancelled. 
       <strong>PKR {amount_saved:,.2f}</strong> has been completely preserved and refunded to Tariq Mahmood's account.
     </p>
-    <div style="background: #1e293b; border-radius: 14px; padding: 18px; margin-bottom: 24px; text-align: left; font-size: 12px;">
+    <div style="background: #1e293b; border-radius: 14px; padding: 18px; margin-bottom: 20px; text-align: left; font-size: 12px;">
       <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
         <span style="color: #64748b;">Hold ID:</span>
         <span style="font-family: monospace; color: #38bdf8; font-weight: bold;">{hold_id}</span>
@@ -446,8 +486,11 @@ def handle_guardian_decision(action: str = "block", hold_id: str = "", guardian:
         <span style="color: #6ee7b7; font-weight: bold;">Escrow Cancelled • Funds Safe</span>
       </div>
     </div>
+    <div style="margin-bottom: 20px; padding: 12px; background: rgba(16, 185, 129, 0.08); border: 1px dashed #059669; border-radius: 12px; text-align: right; direction: rtl; font-family: serif; font-size: 15px; color: #6ee7b7;">
+      رقم بحفاظت واپس اکاؤنٹ میں ریورس ہو چکی ہے۔ فراڈیے کو کچھ نہیں ملا۔
+    </div>
     <p style="margin: 0; font-size: 11px; color: #475569;">
-      ScamShield Live Autonomous Defense • Protected under SBP Guidelines
+      ScamShield Live Autonomous Defense • Protected under State Bank of Pakistan Guidelines
     </p>
   </div>
 </body>
@@ -461,6 +504,29 @@ def handle_guardian_decision(action: str = "block", hold_id: str = "", guardian:
   <p>Hold {hold_id} released.</p>
 </body>
 </html>""", status_code=200)
+
+@app.get("/holds/active")
+@app.get("/bank/holds/active")
+def get_active_holds(hold_id: Optional[str] = None):
+    """Returns status of a specific hold or the currently active cooling-off escrow hold."""
+    if hold_id:
+        if hold_id in holds_db:
+            return {"has_hold": True, "hold": holds_db[hold_id]}
+        return {"has_hold": False, "hold": None}
+    
+    # If no hold_id specified, only return holds actively in cooling_off_escrow
+    for h_id in reversed(list(holds_db.keys())):
+        if holds_db[h_id].get("status") == "cooling_off_escrow":
+            return {"has_hold": True, "hold": holds_db[h_id]}
+            
+    return {"has_hold": False, "hold": None}
+
+@app.get("/holds/{hold_id}")
+@app.get("/bank/holds/{hold_id}")
+def get_hold_by_id(hold_id: str):
+    if hold_id in holds_db:
+        return {"found": True, "hold": holds_db[hold_id]}
+    return {"found": False, "hold": None}
 
 @app.post("/dispatch/email")
 @app.post("/bank/dispatch/email")

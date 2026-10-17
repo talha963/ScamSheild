@@ -20,6 +20,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.webkit.JavascriptInterface
 import android.webkit.PermissionRequest
+import android.webkit.ValueCallback
 import android.webkit.WebChromeClient
 import android.webkit.WebSettings
 import android.webkit.WebResourceRequest
@@ -52,6 +53,7 @@ class MainActivity : Activity() {
     private lateinit var btnFloatingShield: LinearLayout
     private lateinit var pillDot: View
     private lateinit var tvPillText: TextView
+    private var fileUploadCallback: ValueCallback<Array<Uri>>? = null
 
     private val prefs by lazy { getSharedPreferences("scamshield_prefs", Context.MODE_PRIVATE) }
 
@@ -59,6 +61,7 @@ class MainActivity : Activity() {
         private const val PERMISSION_REQ_CODE = 2001
         private const val OVERLAY_REQ_CODE = 2002
         private const val CALL_SCREEN_REQ_CODE = 2003
+        private const val FILE_CHOOSER_REQ_CODE = 3001
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -88,6 +91,7 @@ class MainActivity : Activity() {
         settings.databaseEnabled = true
         settings.mediaPlaybackRequiresUserGesture = false
         settings.cacheMode = WebSettings.LOAD_DEFAULT
+        settings.userAgentString = (settings.userAgentString ?: "") + " ScamShield-Android/1.0"
 
         // The bundled React app is loaded as an ES module, and a module fetched over file://
         // is blocked by CORS ("origin null"), which leaves the page blank. WebViewAssetLoader
@@ -132,6 +136,29 @@ class MainActivity : Activity() {
             override fun onPermissionRequest(request: PermissionRequest?) {
                 // Grant microphone or media permissions requested by the web view (for in-app demo)
                 request?.grant(request.resources)
+            }
+
+            override fun onShowFileChooser(
+                webView: WebView?,
+                filePathCallback: ValueCallback<Array<Uri>>?,
+                fileChooserParams: FileChooserParams?
+            ): Boolean {
+                fileUploadCallback?.onReceiveValue(null)
+                fileUploadCallback = filePathCallback
+
+                val intent = fileChooserParams?.createIntent() ?: Intent(Intent.ACTION_GET_CONTENT).apply {
+                    type = "image/*"
+                    addCategory(Intent.CATEGORY_OPENABLE)
+                }
+
+                return try {
+                    startActivityForResult(intent, FILE_CHOOSER_REQ_CODE)
+                    true
+                } catch (e: Exception) {
+                    fileUploadCallback?.onReceiveValue(null)
+                    fileUploadCallback = null
+                    false
+                }
             }
         }
 
@@ -421,6 +448,20 @@ class MainActivity : Activity() {
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == FILE_CHOOSER_REQ_CODE) {
+            val results: Array<Uri>? = if (resultCode == Activity.RESULT_OK && data != null) {
+                val clipData = data.clipData
+                if (clipData != null && clipData.itemCount > 0) {
+                    Array(clipData.itemCount) { i -> clipData.getItemAt(i).uri }
+                } else {
+                    data.data?.let { arrayOf(it) }
+                }
+            } else {
+                null
+            }
+            fileUploadCallback?.onReceiveValue(results)
+            fileUploadCallback = null
+        }
         updatePillStatus()
     }
 

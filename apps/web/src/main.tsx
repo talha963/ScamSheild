@@ -36,15 +36,27 @@ if (typeof window !== 'undefined') {
     let url = typeof input === 'string' ? input : input instanceof Request ? input.url : input.toString();
     const base = getBackendBase();
 
-    if (base && (url.startsWith('/v1/') || url.startsWith('/health') || url.startsWith('/bank/'))) {
-      url = base + url;
-      if (typeof input === 'string') {
-        return originalFetch(url, init);
-      } else if (input instanceof Request) {
-        return originalFetch(new Request(url, input), init);
-      }
+    // Ensure ngrok-skip-browser-warning header is always attached to prevent ERR_NGROK_6024
+    const headers = new Headers(init?.headers || (input instanceof Request ? input.headers : {}));
+    if (!headers.has('ngrok-skip-browser-warning')) {
+      headers.set('ngrok-skip-browser-warning', 'true');
     }
-    return originalFetch(input, init);
+
+    if (base && (url.startsWith('/v1/') || url.startsWith('/health') || url.startsWith('/bank/') || url.startsWith('/samples/'))) {
+      url = base + url;
+    }
+
+    const modifiedInit: RequestInit = {
+      ...init,
+      headers,
+    };
+
+    if (typeof input === 'string' || input instanceof URL) {
+      return originalFetch(url, modifiedInit);
+    } else if (input instanceof Request) {
+      return originalFetch(new Request(url, { ...input, headers, ...init }));
+    }
+    return originalFetch(url, modifiedInit);
   };
 }
 

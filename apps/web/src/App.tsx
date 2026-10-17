@@ -122,7 +122,9 @@ export function App() {
               <LiveCallGuard />
             )}
 
-            {activeTab === 'mock-bank' && <MockBank />}
+            <div style={{ display: activeTab === 'mock-bank' ? 'block' : 'none' }}>
+              <MockBank />
+            </div>
 
             {activeTab === 'scam-lens' && <ScamLens />}
 

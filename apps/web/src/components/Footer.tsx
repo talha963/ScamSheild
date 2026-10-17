@@ -12,6 +12,7 @@ import {
   MapPin,
   FileText,
   CheckCircle,
+  Download,
 } from 'lucide-react';
 import { ActiveTab } from './Header';
 
@@ -85,6 +86,16 @@ export const Footer: React.FC<FooterProps> = ({ onNavigateTab }) => {
             </p>
             <div className="pt-2 text-xs text-slate-400 dark:text-slate-500">
               <span>Works with JazzCash, Easypaisa, Raast, and all major Pakistani banks.</span>
+            </div>
+            <div className="pt-1">
+              <a
+                href="./scamshield.apk"
+                download="scamshield.apk"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition-all shadow-xs"
+              >
+                <Download className="w-3.5 h-3.5" />
+                <span>Download Android APK</span>
+              </a>
             </div>
           </div>
 

@@ -379,7 +379,7 @@ export const Header: React.FC<HeaderProps> = ({
               className="w-full flex items-center justify-center gap-2 p-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md transition-all mt-3"
             >
               <Download className="w-4 h-4" />
-              <span>Download Android APK (9.5 MB)</span>
+              <span>Download Android APK (Official App)</span>
             </a>
           </div>
         )}
