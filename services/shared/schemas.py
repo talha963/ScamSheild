@@ -106,7 +106,7 @@ class BankHoldResponse(BaseModel):
 
 class BankStepUpRequest(BaseModel):
     hold_id: str
-    verification_method: Literal["guardian_approval", "callback_verified", "branch_override", "cancel_by_user"]
+    verification_method: Literal["guardian_approval", "callback_verified", "branch_override", "cancel_by_user", "reverse_by_guardian"]
     authorized_by: str
     comments: Optional[str] = None
 

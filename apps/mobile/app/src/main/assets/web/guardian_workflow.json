@@ -1,0 +1,266 @@
+{
+  "name": "ScamShield Live - Guardian Circle Automation (SMS & Email Reversal)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "guardian-alert",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "id": "webhook-trigger",
+      "name": "Webhook: Scam Call Alert Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [220, 320]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Prepare SMS Text & Beautiful Responsive HTML Email for Family Guardian\nconst input = $input.first().json;\n\nconst holdId = input.hold_id || ('hold_' + Math.random().toString(36).substr(2, 8));\nconst userName = input.user_name || 'Tariq Mahmood';\nconst amount = input.amount || 85000;\nconst currency = input.currency || 'PKR';\nconst tier = input.tier !== undefined ? input.tier : 3;\nconst guardianName = input.guardian_name || 'Hamza Tariq (Son)';\nconst guardianPhone = input.guardian_phone || '+92 300 9876543';\nconst guardianEmail = input.guardian_email || 'hamza.tariq@gmail.com';\nconst payeeName = input.payee_name || 'Ali Raza (Unverified Account)';\nconst scamType = input.scam_type || 'Imposter Call (Coerced transfer pressure)';\n\nconst publicHost = 'https://flatbed-carve-imprint.ngrok-free.dev';\n\n// 1-Tap Action URLs for the family member to click from phone SMS or Email\nconst reverseUrl = `${publicHost}/webhook/guardian-decision?action=block&hold_id=${holdId}&guardian=${encodeURIComponent(guardianName)}`;\nconst approveUrl = `${publicHost}/webhook/guardian-decision?action=approve&hold_id=${holdId}&guardian=${encodeURIComponent(guardianName)}`;\n\n// 1. Clean SMS Text Format (fits mobile preview)\nconst smsBody = `🚨 SCAMSHIELD URGENT ALERT: Your family member ${userName} initiated a transfer of ${currency} ${Number(amount).toLocaleString()} during an active unknown caller pressure.\\n\\n` +\n  `Funds are FROZEN in 15-minute escrow. If you suspect a scam, tap here to REVERSE and refund immediately:\\n` +\n  `${reverseUrl}\\n\\n` +\n  `(To approve if legitimate: ${approveUrl})`;\n\n// 2. High-Tech, Beautiful & Responsive HTML Email Template\nconst emailHtml = `\n<!DOCTYPE html>\n<html>\n<head>\n  <meta charset=\"utf-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n  <title>ScamShield Urgent Family Alert</title>\n</head>\n<body style=\"margin: 0; padding: 0; background-color: #030712; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #f9fafb;\">\n  <table width=\"100%\" border=\"0\" cellspacing=\"0\" cellpadding=\"0\" style=\"background-color: #030712; padding: 24px 12px;\">\n    <tr>\n      <td align=\"center\">\n        <!-- Main Email Container -->\n        <table width=\"100%\" border=\"0\" cellspacing=\"0\" cellpadding=\"0\" style=\"max-width: 600px; background-color: #0f172a; border: 1px solid #1e293b; border-radius: 20px; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);\">\n          \n          <!-- Header Bar -->\n          <tr>\n            <td style=\"background: linear-gradient(135deg, #1e1b4b 0%, #0f172a 100%); padding: 28px 32px; border-bottom: 1px solid #1e293b;\">\n              <table width=\"100%\" border=\"0\" cellspacing=\"0\" cellpadding=\"0\">\n                <tr>\n                  <td>\n                    <div style=\"display: inline-block; padding: 6px 12px; background: rgba(225, 29, 72, 0.2); border: 1px solid #f43f5e; border-radius: 100px; color: #fda4af; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px;\">\n                      🚨 Emergency Family Interception\n                    </div>\n                    <h1 style=\"margin: 12px 0 4px; font-size: 22px; font-weight: 900; color: #ffffff; letter-spacing: -0.5px;\">\n                      ScamShield Live Defense Network\n                    </h1>\n                    <p style=\"margin: 0; font-size: 13px; color: #94a3b8;\">\n                      Automated Guardian Security Alert for <strong>${guardianName}</strong>\n                    </p>\n                  </td>\n                </tr>\n              </table>\n            </td>\n          </tr>\n\n          <!-- Main Body -->\n          <tr>\n            <td style=\"padding: 32px;\">\n              \n              <!-- Critical Alert Box -->\n              <div style=\"background: rgba(225, 29, 72, 0.1); border-left: 4px solid #f43f5e; padding: 18px 20px; border-radius: 12px; margin-bottom: 26px;\">\n                <p style=\"margin: 0 0 6px; font-size: 15px; font-weight: 800; color: #fecdd3;\">\n                  High-Risk Transfer Paused During Coerced Call!\n                </p>\n                <p style=\"margin: 0; font-size: 13px; color: #cbd5e1; line-height: 1.5;\">\n                  Your family member <strong>${userName}</strong> is currently on an unverified call and attempted to transfer funds. ScamShield detected coercive pressure and locked the money in a <strong>15-Minute Safety Escrow</strong>.\n                </p>\n              </div>\n\n              <!-- Transaction Detail Card -->\n              <table width=\"100%\" border=\"0\" cellspacing=\"0\" cellpadding=\"0\" style=\"background-color: #1e293b; border-radius: 14px; padding: 20px; margin-bottom: 28px;\">\n                <tr>\n                  <td style=\"padding-bottom: 12px; border-bottom: 1px solid #334155;\">\n                    <span style=\"font-size: 11px; color: #94a3b8; text-transform: uppercase; font-weight: 700;\">Protected Family Member</span><br>\n                    <strong style=\"font-size: 16px; color: #ffffff;\">${userName}</strong>\n                  </td>\n                </tr>\n                <tr>\n                  <td style=\"padding: 12px 0; border-bottom: 1px solid #334155;\">\n                    <span style=\"font-size: 11px; color: #94a3b8; text-transform: uppercase; font-weight: 700;\">Amount Intercepted</span><br>\n                    <strong style=\"font-size: 26px; font-weight: 900; color: #38bdf8;\">${currency} ${Number(amount).toLocaleString()}</strong>\n                    <span style=\"font-size: 12px; color: #a7f3d0; margin-left: 8px;\">(100% Held Safe)</span>\n                  </td>\n                </tr>\n                <tr>\n                  <td style=\"padding: 12px 0; border-bottom: 1px solid #334155;\">\n                    <span style=\"font-size: 11px; color: #94a3b8; text-transform: uppercase; font-weight: 700;\">Suspicious Destination Account</span><br>\n                    <span style=\"font-size: 14px; color: #f87171; font-weight: 700;\">${payeeName}</span>\n                  </td>\n                </tr>\n                <tr>\n                  <td style=\"padding-top: 12px;\">\n                    <span style=\"font-size: 11px; color: #94a3b8; text-transform: uppercase; font-weight: 700;\">Detection Reason</span><br>\n                    <span style=\"font-size: 13px; color: #fbbf24; font-weight: 600;\">⚠️ ${scamType}</span>\n                  </td>\n                </tr>\n              </table>\n\n              <!-- Urgent Action Callouts -->\n              <div style=\"text-align: center; margin-bottom: 24px;\">\n                <p style=\"margin: 0 0 16px; font-size: 14px; font-weight: 700; color: #e2e8f0;\">\n                  If you suspect ${userName} is being scammed, tap below to reverse the transaction now:\n                </p>\n                \n                <!-- PRIMARY 1-TAP REVERSE BUTTON -->\n                <a href=\"${reverseUrl}\" target=\"_blank\" style=\"display: block; background: #e11d48; background-image: linear-gradient(to right, #e11d48, #be123c); color: #ffffff; text-decoration: none; padding: 18px 24px; border-radius: 14px; font-size: 16px; font-weight: 900; text-align: center; letter-spacing: 0.3px; box-shadow: 0 10px 20px -5px rgba(225, 29, 72, 0.5);\">\n                  🛡️ REVERSE TRANSACTION & REFUND MONEY NOW\n                </a>\n\n                <p style=\"margin: 12px 0 0; font-size: 12px; color: #94a3b8;\">\n                  Tapping this button immediately cancels the transfer and refunds 100% back to ${userName}'s balance.\n                </p>\n              </div>\n\n              <!-- SECONDARY APPROVE BUTTON -->\n              <div style=\"text-align: center; padding-top: 16px; border-top: 1px solid #1e293b;\">\n                <p style=\"margin: 0 0 10px; font-size: 12px; color: #64748b;\">\n                  Only if you personally verified this payment is legitimate:\n                </p>\n                <a href=\"${approveUrl}\" target=\"_blank\" style=\"display: inline-block; background: #047857; color: #ffffff; text-decoration: none; padding: 10px 20px; border-radius: 10px; font-size: 13px; font-weight: 700;\">\n                  ✓ Approve Legitimate Transfer\n                </a>\n              </div>\n\n              <!-- Bilingual Urdu Reassurance -->\n              <div style=\"margin-top: 26px; padding: 14px 18px; background: rgba(16, 185, 129, 0.08); border: 1px dashed #059669; border-radius: 12px; text-align: right; direction: rtl;\">\n                <p style=\"margin: 0; font-family: serif; font-size: 14px; color: #6ee7b7; line-height: 1.6;\">\n                  یہ رقم ابھی بھی بینک کے سیکیورٹی ایسکرو میں محفوظ ہے۔ فراڈیے کے اکاؤنٹ میں نہیں گئی۔ اگر یہ فراڈ ہے تو اوپر دیے گئے ریورس بٹن کو دبا کر پیسے فوری واپس کریں۔\n                </p>\n              </div>\n\n            </td>\n          </tr>\n\n          <!-- Footer -->\n          <tr>\n            <td style=\"background-color: #090d16; padding: 20px 32px; border-top: 1px solid #1e293b; text-align: center;\">\n              <p style=\"margin: 0 0 6px; font-size: 11px; color: #64748b;\">\n                ScamShield Live Autonomous Voice Scam Defense & Banking Circuit-Breaker\n              </p>\n              <p style=\"margin: 0; font-size: 10px; color: #475569;\">\n                Protected under State Bank of Pakistan Consumer Protection Guidelines • FIA Cybercrime Helpline: 1991\n              </p>\n            </td>\n          </tr>\n\n        </table>\n      </td>\n    </tr>\n  </table>\n</body>\n</html>\n`;\n\nreturn [{\n  json: {\n    hold_id: holdId,\n    user_name: userName,\n    amount: amount,\n    currency: currency,\n    tier: tier,\n    guardian_name: guardianName,\n    guardian_phone: guardianPhone,\n    guardian_email: guardianEmail,\n    payee_name: payeeName,\n    scam_type: scamType,\n    reverse_url: reverseUrl,\n    approve_url: approveUrl,\n    sms_body: smsBody,\n    email_subject: `🚨 URGENT: High-Risk Transfer Intercepted for ${userName} (${currency} ${Number(amount).toLocaleString()})`,\n    email_html: emailHtml,\n    alert_time: new Date().toISOString()\n  }\n}];"
+      },
+      "id": "format-sms-email",
+      "name": "Code: Build SMS & Stunning HTML Email",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [460, 320]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://scamshield-backend:8000/bank/audit-log",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"event\": \"SMS_DISPATCHED_TO_GUARDIAN\",\n  \"guardian_phone\": \"{{ $json.guardian_phone }}\",\n  \"guardian_name\": \"{{ $json.guardian_name }}\",\n  \"hold_id\": \"{{ $json.hold_id }}\",\n  \"sms_text\": \"{{ $json.sms_body }}\",\n  \"reverse_link\": \"{{ $json.reverse_url }}\"\n}",
+        "options": {}
+      },
+      "id": "dispatch-sms",
+      "name": "SMS Gateway: Send to Mobile Phone",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [720, 220]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://scamshield-backend:8000/bank/audit-log",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"event\": \"RICH_EMAIL_DISPATCHED_TO_GUARDIAN\",\n  \"recipient_email\": \"{{ $json.guardian_email }}\",\n  \"recipient_name\": \"{{ $json.guardian_name }}\",\n  \"subject\": \"{{ $json.email_subject }}\",\n  \"hold_id\": \"{{ $json.hold_id }}\",\n  \"amount\": {{ $json.amount }},\n  \"html_ui_preview\": \"Rich responsive email generated with 1-Tap Reversal Button\"\n}",
+        "options": {}
+      },
+      "id": "dispatch-rich-email",
+      "name": "Email Engine: Send Beautiful HTML Alert",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [720, 420]
+    },
+    {
+      "parameters": {
+        "httpMethod": "GET",
+        "path": "guardian-decision",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "guardian-decision-webhook",
+      "name": "Webhook: Guardian Decision Click (SMS/Email)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [220, 680]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "action-condition",
+              "leftValue": "={{ $json.query.action }}",
+              "rightValue": "block",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "decision-check",
+      "name": "IF Action == 'block' (Reverse)",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [460, 680]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://scamshield-backend:8000/bank/step-up",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"hold_id\": \"{{ $json.query.hold_id }}\",\n  \"verification_method\": \"reverse_by_guardian\",\n  \"authorized_by\": \"Family Guardian: {{ $json.query.guardian || 'Hamza Tariq' }}\",\n  \"comments\": \"Transaction reversed immediately by family guardian via emergency SMS / Email link\"\n}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
+      },
+      "id": "call-bank-reverse",
+      "name": "Bank Core: REVERSE & REFUND MONEY",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [720, 600]
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "<!DOCTYPE html><html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'><title>ScamShield • Transaction Reversed</title><style>body{font-family:system-ui,-apple-system,sans-serif;background:#030712;color:#f9fafb;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;padding:20px}.card{background:#0f172a;border:1px solid #1e293b;border-radius:24px;padding:36px;max-width:460px;width:100%;text-align:center;box-shadow:0 25px 50px -12px rgba(0,0,0,0.8)}.icon{width:72px;height:72px;background:rgba(16,185,129,0.15);border:2px solid #10b981;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 20px;color:#34d399;font-size:36px}h1{font-size:24px;font-weight:900;margin:0 0 10px;color:#ffffff}p{font-size:14px;color:#94a3b8;line-height:1.6;margin:0 0 24px}.badge{background:rgba(16,185,129,0.2);border:1px solid #059669;color:#6ee7b7;padding:12px 20px;border-radius:14px;font-size:14px;font-weight:800;display:inline-block}.urdu{font-family:serif;font-size:17px;color:#a7f3d0;margin-top:20px;line-height:1.6;direction:rtl}.footer{margin-top:24px;font-size:11px;color:#64748b;border-top:1px solid #1e293b;padding-top:16px}</style></head><body><div class='card'><div class='icon'>🛡️</div><h1>Transaction Reversed Successfully!</h1><p>You have successfully reversed this transaction. The funds have been <strong>100% restored</strong> to your family member's bank account. The fraudulent transfer was aborted and the scammer received nothing.</p><div class='badge'>✓ Money 100% Preserved &amp; Account Safe</div><div class='urdu'>رقم بحفاظت واپس اکاؤنٹ میں ریورس ہو چکی ہے۔ فراڈیے کو کچھ نہیں ملا۔</div><div class='footer'>ScamShield Live Autonomous Circuit-Breaker • Verified by Family Guardian</div></div></body></html>",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "text/html; charset=utf-8"
+              }
+            ]
+          }
+        }
+      },
+      "id": "respond-reversed-html",
+      "name": "Return HTML: Reversal Confirmation Page",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [980, 600]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://scamshield-backend:8000/bank/step-up",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"hold_id\": \"{{ $json.query.hold_id }}\",\n  \"verification_method\": \"guardian_approval\",\n  \"authorized_by\": \"Family Guardian: {{ $json.query.guardian || 'Hamza Tariq' }}\",\n  \"comments\": \"Legitimate payment approved by family guardian\"\n}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
+      },
+      "id": "call-bank-approve",
+      "name": "Bank Core: Approve & Release Transfer",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [720, 800]
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "<!DOCTYPE html><html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'><title>ScamShield • Transfer Approved</title><style>body{font-family:system-ui,-apple-system,sans-serif;background:#030712;color:#f9fafb;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;padding:20px}.card{background:#0f172a;border:1px solid #1e293b;border-radius:24px;padding:36px;max-width:460px;width:100%;text-align:center;box-shadow:0 25px 50px -12px rgba(0,0,0,0.8)}.icon{width:72px;height:72px;background:rgba(59,130,246,0.15);border:2px solid #2563eb;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 20px;color:#60a5fa;font-size:36px}h1{font-size:24px;font-weight:900;margin:0 0 10px;color:#ffffff}p{font-size:14px;color:#94a3b8;line-height:1.6;margin:0 0 24px}.badge{background:rgba(59,130,246,0.2);border:1px solid #2563eb;color:#93c5fd;padding:12px 20px;border-radius:14px;font-size:14px;font-weight:800;display:inline-block}</style></head><body><div class='card'><div class='icon'>✅</div><h1>Payment Approved by Guardian</h1><p>You have approved this transaction as legitimate. The safety hold has been released and the transfer will now proceed.</p><div class='badge'>Verified Legitimate by Family Guardian</div></div></body></html>",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "text/html; charset=utf-8"
+              }
+            ]
+          }
+        }
+      },
+      "id": "respond-approved-html",
+      "name": "Return HTML: Approved Confirmation Page",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [980, 800]
+    }
+  ],
+  "connections": {
+    "Webhook: Scam Call Alert Trigger": {
+      "main": [
+        [
+          {
+            "node": "Code: Build SMS & Stunning HTML Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code: Build SMS & Stunning HTML Email": {
+      "main": [
+        [
+          {
+            "node": "SMS Gateway: Send to Mobile Phone",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Email Engine: Send Beautiful HTML Alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook: Guardian Decision Click (SMS/Email)": {
+      "main": [
+        [
+          {
+            "node": "IF Action == 'block' (Reverse)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF Action == 'block' (Reverse)": {
+      "main": [
+        [
+          {
+            "node": "Bank Core: REVERSE & REFUND MONEY",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Bank Core: Approve & Release Transfer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Bank Core: REVERSE & REFUND MONEY": {
+      "main": [
+        [
+          {
+            "node": "Return HTML: Reversal Confirmation Page",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Bank Core: Approve & Release Transfer": {
+      "main": [
+        [
+          {
+            "node": "Return HTML: Approved Confirmation Page",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

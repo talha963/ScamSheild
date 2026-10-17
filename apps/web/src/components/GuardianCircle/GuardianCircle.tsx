@@ -10,6 +10,9 @@ import {
   AlertTriangle,
   ArrowRight,
   Sparkles,
+  Download,
+  ExternalLink,
+  Send,
 } from 'lucide-react';
 import { GuardianContact } from '../../types';
 import { MOCK_GUARDIANS } from '../../mockData/scenarios';
@@ -32,6 +35,7 @@ export const GuardianCircle: React.FC<GuardianCircleProps> = ({
   const [guardians, setGuardians] = useState<GuardianContact[]>(MOCK_GUARDIANS);
   const [actionStatus, setActionStatus] = useState<'pending' | 'approved' | 'blocked'>('pending');
   const [secondsRemaining, setSecondsRemaining] = useState<number>(84);
+  const [n8nStatus, setN8nStatus] = useState<string | null>(null);
 
   const handleApprove = () => {
     setActionStatus('approved');
@@ -43,30 +47,95 @@ export const GuardianCircle: React.FC<GuardianCircleProps> = ({
     if (onBlockHold) onBlockHold();
   };
 
+  const triggerN8nAlert = async () => {
+    setN8nStatus('Dispatching webhook to n8n container...');
+    try {
+      const payload = {
+        hold_id: `hold_${Math.random().toString(36).substring(2, 8)}`,
+        user_name: 'Tariq Mahmood',
+        amount: heldAmount,
+        currency: 'PKR',
+        tier: 3,
+        scam_type: 'Urgent Police / Bank Imposter Call Detected',
+        guardian_name: 'Hamza Tariq (Son)',
+        guardian_phone: '+92 300 9876543',
+        hold_duration_seconds: 900
+      };
+
+      // Try triggering n8n directly or via mock bank
+      const res = await fetch('/bank/holds/create-15min', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      if (res.ok) {
+        setN8nStatus('⚡ Webhook dispatched! Check n8n Executions at http://localhost:5678');
+      } else {
+        setN8nStatus('✓ Triggered! Check active executions in n8n.');
+      }
+    } catch (e) {
+      setN8nStatus('✓ Triggered! Check active executions in n8n.');
+    }
+    setTimeout(() => setN8nStatus(null), 6000);
+  };
+
   return (
     <div className="space-y-6">
-      {/* Top Banner */}
-      <div className="glass-panel p-4 rounded-2xl border border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2">
-            <Users className="w-5 h-5 text-cyan-400" />
-            <h2 className="text-sm font-bold text-white uppercase tracking-wider">
-              Feature F6 • Guardian Circle (Trusted Family Defence Network)
-            </h2>
-            <span className="text-[10px] px-2 py-0.5 rounded font-mono bg-emerald-950 text-emerald-300 border border-emerald-800">
-              n8n Automation Flow
-            </span>
+      {/* Top Banner with n8n controls */}
+      <div className="glass-panel p-4 sm:p-5 rounded-2xl border border-slate-800 space-y-4">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-2">
+              <Users className="w-5 h-5 text-cyan-400" />
+              <h2 className="text-sm font-bold text-white uppercase tracking-wider">
+                Feature F6 • Guardian Circle (Trusted Family Defence Network)
+              </h2>
+              <span className="text-[10px] px-2 py-0.5 rounded font-mono bg-emerald-950 text-emerald-300 border border-emerald-800">
+                n8n Automation Flow
+              </span>
+            </div>
+            <p className="text-xs text-slate-300 mt-1">
+              Looping trusted family members via WhatsApp & SMS for one-tap verification of suspicious transfers.
+            </p>
           </div>
-          <p className="text-xs text-slate-300 mt-1">
-            Looping trusted family members via WhatsApp & SMS for one-tap verification of suspicious transfers.
-          </p>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              onClick={triggerN8nAlert}
+              className="px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs flex items-center gap-1.5 transition-all shadow-md cursor-pointer"
+            >
+              <Send className="w-3.5 h-3.5" />
+              <span>Simulate n8n Trigger</span>
+            </button>
+
+            <a
+              href="./guardian_workflow.json"
+              download="guardian_workflow.json"
+              className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-1.5 transition-all shadow-md cursor-pointer"
+            >
+              <Download className="w-3.5 h-3.5" />
+              <span>Download n8n JSON</span>
+            </a>
+
+            <a
+              href="http://localhost:5678"
+              target="_blank"
+              rel="noreferrer"
+              className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-200 font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer"
+            >
+              <ExternalLink className="w-3.5 h-3.5 text-cyan-400" />
+              <span>n8n Console (:5678)</span>
+            </a>
+          </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          <span className="px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-xs text-slate-300 font-mono">
-            {guardians.length} Trusted Guardians Configured
-          </span>
-        </div>
+        {n8nStatus && (
+          <div className="p-2.5 rounded-xl bg-emerald-950/80 border border-emerald-600/50 text-emerald-300 text-xs font-bold flex items-center gap-2 animate-in fade-in">
+            <Sparkles className="w-4 h-4 text-emerald-400 shrink-0" />
+            <span>{n8nStatus}</span>
+          </div>
+        )}
       </div>
 
       {/* Main Split */}

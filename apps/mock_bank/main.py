@@ -137,16 +137,20 @@ def execute_step_up_resolution(req: BankStepUpRequest):
         })
         return {"status": "released", "message": "Manual override confirmed"}
 
-    elif req.verification_method == "cancel_by_user":
-        hold["status"] = "cancelled_by_user"
+    elif req.verification_method in ["cancel_by_user", "reverse_by_guardian"]:
+        hold["status"] = "reversed_by_guardian" if req.verification_method == "reverse_by_guardian" else "cancelled_by_user"
         audit_log.append({
             "timestamp": now.isoformat(),
-            "action": "TRANSACTION_CANCELLED_MONEY_SAVED",
+            "action": "TRANSACTION_REVERSED_MONEY_SAVED",
             "hold_id": req.hold_id,
             "amount_saved": hold["amount"],
-            "reason": "User cancelled transfer during 15-minute cooling-off period while suspecting scam call"
+            "authorized_by": req.authorized_by,
+            "reason": req.comments or "Family guardian reversed transfer during 15-minute cooling-off period"
         })
-        return {"status": "cancelled", "message": "Transaction safely cancelled. Money preserved in user account."}
+        return {
+            "status": "reversed",
+            "message": f"Transaction safely reversed by {req.authorized_by}. 100% of PKR {hold['amount']:,.2f} preserved in account."
+        }
 
     else:
         hold["status"] = "blocked"
@@ -161,6 +165,9 @@ def create_15min_safety_hold(data: dict):
     account_id = data.get("account_id", "acc_pk_9941")
     payee_name = data.get("payee_name", "Unknown Payee")
     payee_account = data.get("payee_account", "PK44MBL00098472910")
+    guardian_name = data.get("guardian_name", "Hamza Tariq (Son)")
+    guardian_phone = data.get("guardian_phone", "+92 300 9876543")
+    guardian_email = data.get("guardian_email", "hamza.tariq@gmail.com")
 
     hold_record = {
         "hold_id": hold_id,
@@ -168,6 +175,9 @@ def create_15min_safety_hold(data: dict):
         "amount": amount,
         "payee_name": payee_name,
         "payee_account": payee_account,
+        "guardian_name": guardian_name,
+        "guardian_phone": guardian_phone,
+        "guardian_email": guardian_email,
         "duration_seconds": 900,  # 15 minutes
         "status": "cooling_off_escrow",
         "reason": "ScamShield Phone Interceptor: High-risk urgency call in progress",
@@ -179,8 +189,39 @@ def create_15min_safety_hold(data: dict):
         "action": "15_MIN_SAFETY_ESCROW_STARTED",
         "hold_id": hold_id,
         "amount": amount,
-        "payee": payee_name
+        "payee": payee_name,
+        "guardian_notified": guardian_name
     })
+
+    # Dispatch to n8n Guardian Circle Workflow in background
+    try:
+        import urllib.request
+        import json as _json
+        n8n_url = "http://scamshield-n8n:5678/webhook/guardian-alert"
+        payload = {
+            "hold_id": hold_id,
+            "user_name": "Tariq Mahmood",
+            "user_account": account_id,
+            "amount": amount,
+            "currency": "PKR",
+            "tier": 3,
+            "scam_type": "Phone Urgency Imposter (Coerced Transfer Attempt)",
+            "payee_name": payee_name,
+            "payee_account": payee_account,
+            "guardian_name": guardian_name,
+            "guardian_phone": guardian_phone,
+            "guardian_email": guardian_email,
+            "hold_duration_seconds": 900
+        }
+        req = urllib.request.Request(
+            n8n_url,
+            data=_json.dumps(payload).encode("utf-8"),
+            headers={"Content-Type": "application/json"}
+        )
+        urllib.request.urlopen(req, timeout=1.2)
+    except Exception:
+        pass
+
     return hold_record
 
 @app.post("/fraud-cases", response_model=FraudCaseReport)
