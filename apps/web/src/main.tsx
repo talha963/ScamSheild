@@ -6,8 +6,8 @@ import App from './App.tsx'
 // Intercept API fetch calls to route cleanly to the ScamShield backend in both web and Android APK WebView
 if (typeof window !== 'undefined') {
   const getBackendBase = (): string => {
-    // 1. Android Native Bridge
-    if ((window as any).ScamShieldAndroid?.getServerUrl) {
+    // 1. Android Native Bridge (queried dynamically on every call)
+    if (typeof (window as any).ScamShieldAndroid?.getServerUrl === 'function') {
       try {
         const u = (window as any).ScamShieldAndroid.getServerUrl();
         if (u) return u.replace(/\/$/, '');
@@ -19,11 +19,15 @@ if (typeof window !== 'undefined') {
     const saved = localStorage.getItem('scamshield_server_url');
     if (saved) return saved.replace(/\/$/, '');
 
-    // 3. Bundled inside Android APK WebView (file protocol)
-    if (window.location.protocol === 'file:') {
-      return 'https://americans-membrane-variation-thomas.trycloudflare.com';
+    // 3. Bundled inside Android APK WebView (appassets.androidplatform.net or file://)
+    if (
+      window.location.protocol === 'file:' ||
+      window.location.hostname === 'appassets.androidplatform.net' ||
+      window.location.hostname.includes('androidplatform.net')
+    ) {
+      return 'https://flatbed-carve-imprint.ngrok-free.dev';
     }
-    // 4. In browser, relative proxying via Nginx/Vite handles /v1/
+    // 4. In browser, relative proxying via Nginx/Vite handles /v1/ and /bank/
     return '';
   };
 
