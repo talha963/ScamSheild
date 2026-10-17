@@ -156,6 +156,16 @@ def execute_step_up_resolution(req: BankStepUpRequest):
         hold["status"] = "blocked"
         return {"status": "blocked", "message": "Transfer permanently cancelled"}
 
+from fastapi.responses import HTMLResponse
+from services.notifications.dispatcher import (
+    generate_guardian_alert,
+    send_real_email,
+    send_real_sms,
+    get_notification_config,
+    save_notification_config,
+    alerts_cache,
+)
+
 @app.post("/holds/create-15min")
 @app.post("/bank/holds/create-15min")
 def create_15min_safety_hold(data: dict):
@@ -169,6 +179,34 @@ def create_15min_safety_hold(data: dict):
     guardian_phone = data.get("guardian_phone", "+92 300 9876543")
     guardian_email = data.get("guardian_email", "hamza.tariq@gmail.com")
 
+    # Generate tailored multi-channel alerts (SMS & Responsive HTML Email)
+    alert_info = generate_guardian_alert(
+        hold_id=hold_id,
+        user_name="Tariq Mahmood",
+        amount=amount,
+        currency="PKR",
+        payee_name=payee_name,
+        payee_account=payee_account,
+        scam_type="Phone Urgency Imposter (Coerced Transfer Attempt)",
+        guardian_name=guardian_name,
+        guardian_phone=guardian_phone,
+        guardian_email=guardian_email
+    )
+
+    # Attempt direct real email delivery (SMTP) to the exact address the user entered
+    email_delivery_result = send_real_email(
+        to_email=guardian_email,
+        subject=alert_info["email_subject"],
+        html_content=alert_info["email_html"],
+        text_content=alert_info["sms_body"]
+    )
+
+    # Attempt direct real SMS delivery (Twilio) to the exact phone number the user entered
+    sms_delivery_result = send_real_sms(
+        phone_number=guardian_phone,
+        message_text=alert_info["sms_body"]
+    )
+
     hold_record = {
         "hold_id": hold_id,
         "account_id": account_id,
@@ -181,19 +219,30 @@ def create_15min_safety_hold(data: dict):
         "duration_seconds": 900,  # 15 minutes
         "status": "cooling_off_escrow",
         "reason": "ScamShield Phone Interceptor: High-risk urgency call in progress",
-        "created_at": now.isoformat()
+        "created_at": now.isoformat(),
+        "email_delivery": email_delivery_result,
+        "sms_delivery": sms_delivery_result,
+        "sms_body": alert_info["sms_body"],
+        "email_subject": alert_info["email_subject"],
+        "reverse_url": alert_info["reverse_url"],
+        "preview_url": f"/bank/notifications/preview/{hold_id}"
     }
     holds_db[hold_id] = hold_record
+
     audit_log.append({
         "timestamp": now.isoformat(),
         "action": "15_MIN_SAFETY_ESCROW_STARTED",
         "hold_id": hold_id,
         "amount": amount,
         "payee": payee_name,
-        "guardian_notified": guardian_name
+        "guardian_notified": guardian_name,
+        "guardian_email": guardian_email,
+        "guardian_phone": guardian_phone,
+        "email_delivery": email_delivery_result,
+        "sms_delivery": sms_delivery_result
     })
 
-    # Dispatch to n8n Guardian Circle Workflow in background
+    # Also notify n8n Guardian Circle Workflow in background
     try:
         import urllib.request
         import json as _json
@@ -211,7 +260,8 @@ def create_15min_safety_hold(data: dict):
             "guardian_name": guardian_name,
             "guardian_phone": guardian_phone,
             "guardian_email": guardian_email,
-            "hold_duration_seconds": 900
+            "hold_duration_seconds": 900,
+            "reverse_url": alert_info["reverse_url"]
         }
         req = urllib.request.Request(
             n8n_url,
@@ -223,6 +273,226 @@ def create_15min_safety_hold(data: dict):
         pass
 
     return hold_record
+
+# -----------------------------------------------------------------------------
+# Gateway Notification Management & Direct Preview Endpoints
+# -----------------------------------------------------------------------------
+
+@app.get("/notifications/config")
+@app.get("/bank/notifications/config")
+def get_gateway_config():
+    """Returns current SMTP and Twilio configuration (passwords masked)."""
+    return get_notification_config(mask_secrets=True)
+
+@app.post("/notifications/config")
+@app.post("/bank/notifications/config")
+def update_gateway_config(config_data: dict):
+    """Saves updated SMTP or Twilio settings for live email/SMS sending."""
+    updated = save_notification_config(config_data)
+    audit_log.append({
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "action": "GATEWAY_CONFIG_UPDATED",
+        "smtp_host": updated.get("smtp_host"),
+        "smtp_user": updated.get("smtp_user")
+    })
+    return {"status": "saved", "config": updated}
+
+@app.post("/notifications/test-email")
+@app.post("/bank/notifications/test-email")
+def test_send_email(data: dict):
+    """
+    Sends a test rich HTML alert to the specified recipient email.
+    """
+    to_email = data.get("email") or "hamza.tariq@gmail.com"
+    dummy_hold = f"test_{uuid.uuid4().hex[:6]}"
+    alert = generate_guardian_alert(
+        hold_id=dummy_hold,
+        user_name="Tariq Mahmood",
+        amount=85000.0,
+        currency="PKR",
+        guardian_name="Guardian Delegate",
+        guardian_phone="+92 300 9876543",
+        guardian_email=to_email
+    )
+    result = send_real_email(
+        to_email=to_email,
+        subject=f"[Test] {alert['email_subject']}",
+        html_content=alert["email_html"],
+        text_content=alert["sms_body"]
+    )
+    audit_log.append({
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "action": "TEST_EMAIL_DISPATCHED",
+        "recipient": to_email,
+        "result": result
+    })
+    return result
+
+@app.post("/notifications/test-sms")
+@app.post("/bank/notifications/test-sms")
+def test_send_sms(data: dict):
+    """
+    Sends a test SMS to the specified phone number.
+    """
+    phone = data.get("phone") or "+92 300 9876543"
+    msg = f"🚨 [ScamShield Test] Emergency family alert test sent to {phone}. Gateway verified."
+    result = send_real_sms(phone, msg)
+    audit_log.append({
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "action": "TEST_SMS_DISPATCHED",
+        "phone": phone,
+        "result": result
+    })
+    return result
+
+@app.get("/notifications/preview/{hold_id}", response_class=HTMLResponse)
+@app.get("/bank/notifications/preview/{hold_id}", response_class=HTMLResponse)
+def preview_email_html(hold_id: str):
+    """
+    Serves the beautiful, responsive HTML email directly in the browser.
+    """
+    if hold_id in alerts_cache:
+        return HTMLResponse(content=alerts_cache[hold_id]["email_html"], status_code=200)
+
+    # Fallback if hold exists in DB
+    if hold_id in holds_db:
+        h = holds_db[hold_id]
+        alert = generate_guardian_alert(
+            hold_id=hold_id,
+            user_name="Tariq Mahmood",
+            amount=h["amount"],
+            currency="PKR",
+            payee_name=h.get("payee_name", "Unknown Payee"),
+            guardian_name=h.get("guardian_name", "Family Guardian"),
+            guardian_phone=h.get("guardian_phone", "+92 300 9876543"),
+            guardian_email=h.get("guardian_email", "hamza.tariq@gmail.com")
+        )
+        return HTMLResponse(content=alert["email_html"], status_code=200)
+
+    # Fallback sample preview
+    sample = generate_guardian_alert(
+        hold_id=hold_id,
+        user_name="Tariq Mahmood",
+        amount=85000.0,
+        currency="PKR"
+    )
+    return HTMLResponse(content=sample["email_html"], status_code=200)
+
+@app.get("/guardian-decision", response_class=HTMLResponse)
+@app.get("/bank/guardian-decision", response_class=HTMLResponse)
+def handle_guardian_decision(action: str = "block", hold_id: str = "", guardian: str = "Family Guardian"):
+    """
+    Public decision handler triggered when family member taps button in SMS or Email.
+    """
+    now = datetime.now(timezone.utc)
+    amount_saved = 85000.0
+
+    if hold_id in holds_db:
+        hold = holds_db[hold_id]
+        amount_saved = hold["amount"]
+        if action == "block":
+            hold["status"] = "reversed_by_guardian"
+            audit_log.append({
+                "timestamp": now.isoformat(),
+                "action": "TRANSACTION_REVERSED_MONEY_SAVED",
+                "hold_id": hold_id,
+                "amount_saved": amount_saved,
+                "authorized_by": f"Family Guardian: {guardian}",
+                "reason": "1-Tap Reversal link clicked from SMS / Email"
+            })
+        else:
+            hold["status"] = "released"
+            audit_log.append({
+                "timestamp": now.isoformat(),
+                "action": "HOLD_RELEASED_GUARDIAN_APPROVED",
+                "hold_id": hold_id,
+                "authorized_by": f"Family Guardian: {guardian}"
+            })
+
+    if action == "block":
+        return HTMLResponse(content=f"""<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Transaction Safely Reversed • ScamShield</title>
+</head>
+<body style="margin: 0; padding: 0; background: #030712; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: #f9fafb; display: flex; align-items: center; justify-content: center; min-height: 100vh;">
+  <div style="max-width: 480px; margin: 20px; background: #0f172a; border: 1px solid #10b981; border-radius: 24px; padding: 36px 28px; text-align: center; box-shadow: 0 25px 50px -12px rgba(16, 185, 129, 0.35);">
+    <div style="width: 72px; height: 72px; margin: 0 auto 20px; background: rgba(16, 185, 129, 0.15); border: 2px solid #10b981; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 34px;">
+      🛡️
+    </div>
+    <span style="display: inline-block; padding: 5px 12px; background: rgba(16, 185, 129, 0.2); border: 1px solid #10b981; border-radius: 100px; color: #6ee7b7; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px;">
+      100% Protected & Refunded
+    </span>
+    <h1 style="margin: 0 0 10px; font-size: 22px; font-weight: 900; color: #ffffff;">
+      Transaction Reversed Successfully!
+    </h1>
+    <p style="margin: 0 0 24px; font-size: 14px; color: #94a3b8; line-height: 1.5;">
+      Thank you, <strong>{guardian}</strong>. The 15-minute escrow hold has been cancelled. 
+      <strong>PKR {amount_saved:,.2f}</strong> has been completely preserved and refunded to Tariq Mahmood's account.
+    </p>
+    <div style="background: #1e293b; border-radius: 14px; padding: 18px; margin-bottom: 24px; text-align: left; font-size: 12px;">
+      <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+        <span style="color: #64748b;">Hold ID:</span>
+        <span style="font-family: monospace; color: #38bdf8; font-weight: bold;">{hold_id}</span>
+      </div>
+      <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+        <span style="color: #64748b;">Action:</span>
+        <span style="color: #10b981; font-weight: bold;">Reversed by Family</span>
+      </div>
+      <div style="display: flex; justify-content: space-between;">
+        <span style="color: #64748b;">Status:</span>
+        <span style="color: #6ee7b7; font-weight: bold;">Escrow Cancelled • Funds Safe</span>
+      </div>
+    </div>
+    <p style="margin: 0; font-size: 11px; color: #475569;">
+      ScamShield Live Autonomous Defense • Protected under SBP Guidelines
+    </p>
+  </div>
+</body>
+</html>""", status_code=200)
+    else:
+        return HTMLResponse(content=f"""<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><title>Transfer Approved</title></head>
+<body style="margin: 0; padding: 40px; background: #030712; font-family: sans-serif; color: #fff; text-align: center;">
+  <h2>Transfer Approved by {guardian}</h2>
+  <p>Hold {hold_id} released.</p>
+</body>
+</html>""", status_code=200)
+
+@app.post("/dispatch/email")
+@app.post("/bank/dispatch/email")
+def dispatch_email_endpoint(data: dict):
+    """Direct email dispatch endpoint for n8n or external triggers."""
+    to_email = data.get("recipient_email") or data.get("guardian_email")
+    subject = data.get("subject", "🚨 ScamShield Emergency Alert")
+    html_content = data.get("email_html", "<p>Alert</p>")
+    text_content = data.get("sms_text")
+    result = send_real_email(to_email, subject, html_content, text_content)
+    audit_log.append({
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "action": "API_EMAIL_DISPATCH",
+        "recipient": to_email,
+        "result": result
+    })
+    return result
+
+@app.post("/dispatch/sms")
+@app.post("/bank/dispatch/sms")
+def dispatch_sms_endpoint(data: dict):
+    """Direct SMS dispatch endpoint for n8n or external triggers."""
+    phone = data.get("guardian_phone") or data.get("phone")
+    text = data.get("sms_text") or data.get("sms_body")
+    result = send_real_sms(phone, text)
+    audit_log.append({
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "action": "API_SMS_DISPATCH",
+        "phone": phone,
+        "result": result
+    })
+    return result
 
 @app.post("/fraud-cases", response_model=FraudCaseReport)
 @app.post("/bank/fraud-cases", response_model=FraudCaseReport)
@@ -241,7 +511,17 @@ def record_fraud_case(case_data: dict):
     fraud_cases_db.append(report)
     return FraudCaseReport(**report)
 
+@app.post("/audit-log")
+@app.post("/bank/audit-log")
+def append_audit_event(entry: dict):
+    """Allows n8n or external services to log audit trail events."""
+    now = datetime.now(timezone.utc)
+    entry["timestamp"] = now.isoformat()
+    audit_log.append(entry)
+    return {"status": "recorded", "total_events": len(audit_log)}
+
 @app.get("/audit-log")
 @app.get("/bank/audit-log")
 def get_audit_trail():
     return {"events": audit_log, "total_events": len(audit_log)}
+

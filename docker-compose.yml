@@ -50,6 +50,10 @@ services:
       PINECONE_API_KEY: ${PINECONE_API_KEY:-}
       PINECONE_INDEX_NAME: ${PINECONE_INDEX_NAME:-scamshield-radar}
       DATABASE_URL: "postgresql://scamshield:${POSTGRES_PASSWORD:-scamshield_secure_pass}@scamshield-db:5432/scamshield"
+    volumes:
+      - ./services:/app/services
+      - ./apps/mock_bank:/app/apps/mock_bank
+      - ./data:/app/data
     depends_on:
       scamshield-db:
         condition: service_healthy

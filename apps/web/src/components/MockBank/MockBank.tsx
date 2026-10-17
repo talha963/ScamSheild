@@ -24,6 +24,13 @@ import {
   Mail,
   MessageSquare,
   Edit3,
+  Settings,
+  ExternalLink,
+  Eye,
+  Smartphone,
+  Sparkles,
+  X,
+  CheckCircle,
 } from 'lucide-react';
 import { RiskTier } from '../../types';
 
@@ -82,6 +89,109 @@ export const MockBank: React.FC<MockBankProps> = ({
   const [guardianPhone, setGuardianPhone] = useState<string>('+92 300 9876543');
   const [guardianEmail, setGuardianEmail] = useState<string>('hamza.tariq@gmail.com');
   const [isEditingGuardian, setIsEditingGuardian] = useState<boolean>(false);
+
+  // Live Multi-Channel Gateway Settings & Preview State
+  const [showGatewayModal, setShowGatewayModal] = useState<boolean>(false);
+  const [showEmailPreviewModal, setShowEmailPreviewModal] = useState<boolean>(false);
+  const [smtpPreset, setSmtpPreset] = useState<'gmail' | 'outlook' | 'custom'>('gmail');
+  const [gatewayConfig, setGatewayConfig] = useState<{
+    smtp_host?: string;
+    smtp_port?: number;
+    smtp_user?: string;
+    smtp_password?: string;
+    smtp_from?: string;
+    smtp_password_configured?: boolean;
+    twilio_sid?: string;
+    twilio_token?: string;
+    twilio_from?: string;
+  }>({
+    smtp_host: 'smtp.gmail.com',
+    smtp_port: 587,
+    smtp_user: '',
+    smtp_password: '',
+    smtp_from: '',
+    smtp_password_configured: false,
+    twilio_sid: '',
+    twilio_token: '',
+    twilio_from: '',
+  });
+
+  const [testEmailStatus, setTestEmailStatus] = useState<{ loading: boolean; success?: boolean; message?: string } | null>(null);
+  const [testSmsStatus, setTestSmsStatus] = useState<{ loading: boolean; success?: boolean; message?: string } | null>(null);
+  const [lastDispatchedHold, setLastDispatchedHold] = useState<any>(null);
+
+  // Load saved gateway settings on mount
+  useEffect(() => {
+    fetch('/bank/notifications/config')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data) {
+          setGatewayConfig(data);
+          if (data.smtp_host?.includes('outlook')) setSmtpPreset('outlook');
+          else if (data.smtp_host?.includes('gmail')) setSmtpPreset('gmail');
+          else setSmtpPreset('custom');
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const handleSaveGatewayConfig = async () => {
+    try {
+      const res = await fetch('/bank/notifications/config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(gatewayConfig),
+      });
+      const data = await res.json();
+      if (data.config) {
+        setGatewayConfig(data.config);
+        setSavedNotification('✓ Email & SMS Gateway settings saved successfully.');
+        setTimeout(() => setSavedNotification(null), 4000);
+      }
+    } catch (e) {}
+  };
+
+  const handleTestEmail = async () => {
+    setTestEmailStatus({ loading: true });
+    try {
+      const res = await fetch('/bank/notifications/test-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: guardianEmail }),
+      });
+      const data = await res.json();
+      setTestEmailStatus({
+        loading: false,
+        success: data.success,
+        message: data.success
+          ? `✓ Rich HTML alert delivered to ${guardianEmail}! Check your inbox.`
+          : `⚠️ ${data.message || data.error || 'Failed to deliver'}`,
+      });
+    } catch (err: any) {
+      setTestEmailStatus({ loading: false, success: false, message: err.message });
+    }
+  };
+
+  const handleTestSms = async () => {
+    setTestSmsStatus({ loading: true });
+    try {
+      const res = await fetch('/bank/notifications/test-sms', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: guardianPhone }),
+      });
+      const data = await res.json();
+      setTestSmsStatus({
+        loading: false,
+        success: data.success,
+        message: data.success
+          ? `✓ SMS alert dispatched to ${guardianPhone}!`
+          : `⚠️ ${data.message || data.error || 'Failed to dispatch SMS'}`,
+      });
+    } catch (err: any) {
+      setTestSmsStatus({ loading: false, success: false, message: err.message });
+    }
+  };
 
   // Transaction History Feed
   const [history, setHistory] = useState<TransferItem[]>([
@@ -188,21 +298,27 @@ export const MockBank: React.FC<MockBankProps> = ({
         ...history,
       ]);
 
-      // Notify the backend & dispatch to n8n
-      try {
-        fetch('/bank/holds/create-15min', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            amount: numAmount,
-            payee_name: recipientDetails.name,
-            payee_account: recipientDetails.account,
-            guardian_name: guardianName,
-            guardian_phone: guardianPhone,
-            guardian_email: guardianEmail,
-          }),
-        }).catch(() => {});
-      } catch (e) {}
+      // Notify the backend & dispatch to n8n and live email/SMS gateways
+      fetch('/bank/holds/create-15min', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          amount: numAmount,
+          payee_name: recipientDetails.name,
+          payee_account: recipientDetails.account,
+          guardian_name: guardianName,
+          guardian_phone: guardianPhone,
+          guardian_email: guardianEmail,
+        }),
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          if (data && data.hold_id) {
+            setHeldTransfer((prev) => (prev ? { ...prev, id: data.hold_id } : prev));
+            setLastDispatchedHold(data);
+          }
+        })
+        .catch(() => {});
     } else {
       // Normal safe transfer (No scam call detected)
       setBalance((prev) => Math.max(0, prev - numAmount));
@@ -264,6 +380,35 @@ export const MockBank: React.FC<MockBankProps> = ({
         }),
       }).catch(() => {});
     } catch (e) {}
+  };
+
+  // CUSTOMER / GUARDIAN ACTION: Family Member Clicks Reversal Link
+  const handleSimulateFamilyReversal = async () => {
+    if (!heldTransfer) return;
+    const targetHoldId = heldTransfer.id;
+    const savedAmount = heldTransfer.amount;
+
+    try {
+      await fetch(`/bank/guardian-decision?action=block&hold_id=${targetHoldId}&guardian=${encodeURIComponent(guardianName)}`);
+    } catch (e) {}
+
+    setHistory((prev) =>
+      prev.map((t) =>
+        t.id === heldTransfer.id
+          ? {
+              ...t,
+              status: 'reversed_by_guardian',
+              reason: `Reversed by ${guardianName} via Emergency SMS / Email Reversal Link • 100% Money Saved`,
+            }
+          : t
+      )
+    );
+
+    setIs15MinHoldActive(false);
+    setHeldTransfer(null);
+    setCountdownSeconds(900);
+    setSavedNotification(`🛡️ Reversal Confirmed! 100% of Rs. ${savedAmount.toLocaleString()} was protected and refunded.`);
+    setTimeout(() => setSavedNotification(null), 5000);
   };
 
   // What happens if 15 minutes expire without cancellation
@@ -587,14 +732,25 @@ export const MockBank: React.FC<MockBankProps> = ({
                   </div>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={() => setIsEditingGuardian(!isEditingGuardian)}
-                  className="px-2.5 py-1 rounded-lg bg-white dark:bg-slate-700 text-[11px] font-bold text-blue-600 dark:text-blue-400 border border-slate-200 dark:border-slate-600 hover:bg-slate-100 flex items-center gap-1 cursor-pointer"
-                >
-                  <Edit3 className="w-3 h-3" />
-                  <span>{isEditingGuardian ? 'Done' : 'Edit'}</span>
-                </button>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setShowGatewayModal(true)}
+                    className="px-2.5 py-1 rounded-lg bg-cyan-50 dark:bg-cyan-950/60 text-[11px] font-bold text-cyan-700 dark:text-cyan-300 border border-cyan-200 dark:border-cyan-800 hover:bg-cyan-100 flex items-center gap-1 cursor-pointer"
+                    title="Configure SMTP & SMS gateways for live delivery"
+                  >
+                    <Settings className="w-3 h-3 text-cyan-600 dark:text-cyan-400" />
+                    <span>Gateway</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsEditingGuardian(!isEditingGuardian)}
+                    className="px-2.5 py-1 rounded-lg bg-white dark:bg-slate-700 text-[11px] font-bold text-blue-600 dark:text-blue-400 border border-slate-200 dark:border-slate-600 hover:bg-slate-100 flex items-center gap-1 cursor-pointer"
+                  >
+                    <Edit3 className="w-3 h-3" />
+                    <span>{isEditingGuardian ? 'Done' : 'Edit'}</span>
+                  </button>
+                </div>
               </div>
 
               {isEditingGuardian ? (
@@ -642,6 +798,28 @@ export const MockBank: React.FC<MockBankProps> = ({
                   </div>
                 </div>
               )}
+
+              {/* Live Gateway Status Indicator */}
+              <div className="pt-2 border-t border-slate-200/50 dark:border-slate-700/50 flex flex-wrap items-center justify-between gap-1.5 text-[11px]">
+                {gatewayConfig.smtp_password_configured ? (
+                  <span className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-bold">
+                    <CheckCircle className="w-3.5 h-3.5" />
+                    Live SMTP Active (Real email delivers to {guardianEmail})
+                  </span>
+                ) : (
+                  <span className="flex items-center gap-1 text-amber-600 dark:text-amber-400 font-medium">
+                    ⚠️ Demo Email Mode (Click Gateway to connect live Gmail inbox)
+                  </span>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setShowGatewayModal(true)}
+                  className="text-cyan-600 dark:text-cyan-400 font-bold hover:underline cursor-pointer text-[10px] flex items-center gap-0.5"
+                >
+                  <span>Configure</span>
+                  <ArrowRight className="w-2.5 h-2.5" />
+                </button>
+              </div>
             </div>
 
             {/* Transfer Confirmation Button */}
@@ -735,39 +913,81 @@ export const MockBank: React.FC<MockBankProps> = ({
                 </div>
               </div>
 
-              {/* Multi-Channel Family Alert Status (n8n Automation) */}
-              <div className="p-3.5 rounded-2xl bg-blue-50/80 dark:bg-blue-950/50 border border-blue-200 dark:border-blue-800 space-y-2 text-xs">
+              {/* Multi-Channel Family Alert Status (n8n + Live SMTP/SMS Gateways) */}
+              <div className="p-4 rounded-2xl bg-blue-50/80 dark:bg-blue-950/50 border border-blue-200 dark:border-blue-800 space-y-3 text-xs">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2 font-bold text-blue-900 dark:text-blue-200">
                     <Users className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                    <span>Emergency Alert Dispatched to Family Member:</span>
+                    <span>Emergency Alerts Dispatched to Family Guardian:</span>
                   </div>
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800">
-                    n8n Active
+                  <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800">
+                    n8n + Gateways Live
                   </span>
                 </div>
 
-                <div className="text-[11px] space-y-1.5 text-slate-700 dark:text-slate-300 bg-white/70 dark:bg-slate-900/70 p-2.5 rounded-xl border border-blue-100 dark:border-blue-900">
+                <div className="space-y-2 bg-white/80 dark:bg-slate-900/80 p-3 rounded-xl border border-blue-100 dark:border-blue-900 text-[11px]">
+                  {/* SMS Channel */}
                   <div className="flex items-center justify-between">
                     <span className="flex items-center gap-1.5 text-slate-600 dark:text-slate-400">
                       <MessageSquare className="w-3.5 h-3.5 text-emerald-500" />
-                      SMS to {guardianName}:
+                      <span>SMS to {guardianName}:</span>
                     </span>
-                    <span className="font-mono font-bold text-slate-900 dark:text-white">{guardianPhone}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono font-bold text-slate-900 dark:text-white">{guardianPhone}</span>
+                      <a
+                        href={`sms:${guardianPhone}?body=${encodeURIComponent(lastDispatchedHold?.sms_body || `🚨 ScamShield Alert: High risk transfer paused. Reverse here: https://flatbed-carve-imprint.ngrok-free.dev/webhook/guardian-decision?action=block&hold_id=${heldTransfer.id}`)}`}
+                        className="px-2 py-0.5 rounded-lg bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 text-[10px] font-bold hover:bg-emerald-100 flex items-center gap-1"
+                      >
+                        <Smartphone className="w-2.5 h-2.5" />
+                        <span>Open SMS</span>
+                      </a>
+                    </div>
                   </div>
-                  <div className="flex items-center justify-between">
+
+                  {/* Email Channel */}
+                  <div className="flex items-center justify-between pt-1 border-t border-slate-100 dark:border-slate-800">
                     <span className="flex items-center gap-1.5 text-slate-600 dark:text-slate-400">
                       <Mail className="w-3.5 h-3.5 text-blue-500" />
-                      HTML Email to:
+                      <span>Rich Email to:</span>
                     </span>
-                    <span className="font-mono font-bold text-slate-900 dark:text-white">{guardianEmail}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono font-bold text-slate-900 dark:text-white">{guardianEmail}</span>
+                      <button
+                        type="button"
+                        onClick={() => setShowEmailPreviewModal(true)}
+                        className="px-2 py-0.5 rounded-lg bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 text-[10px] font-bold hover:bg-blue-100 flex items-center gap-1 cursor-pointer"
+                      >
+                        <Eye className="w-2.5 h-2.5" />
+                        <span>Preview Email</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Delivery Status Confirmation */}
+                  <div className="pt-1 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-[10px]">
+                    <span className="text-slate-500">Live Delivery Status:</span>
+                    {lastDispatchedHold?.email_delivery?.success ? (
+                      <span className="text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1">
+                        <CheckCircle className="w-3 h-3" />
+                        Delivered to Inbox ({guardianEmail})
+                      </span>
+                    ) : (
+                      <span className="text-cyan-600 dark:text-cyan-400 font-medium">
+                        Alert Generated • Ready for 1-Tap Reversal
+                      </span>
+                    )}
                   </div>
                 </div>
 
-                <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-800 dark:text-emerald-300 text-[11px] font-bold flex items-center gap-1.5 border border-emerald-500/30">
-                  <Check className="w-4 h-4 text-emerald-500 shrink-0" />
-                  <span>{guardianName} can tap "REVERSE" in their SMS / Email to refund this money immediately!</span>
-                </div>
+                {/* 1-Tap Family Reversal Simulation Button */}
+                <button
+                  type="button"
+                  onClick={handleSimulateFamilyReversal}
+                  className="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-rose-600 to-pink-600 hover:from-rose-700 hover:to-pink-700 text-white font-extrabold text-xs flex items-center justify-center gap-2 shadow-md shadow-rose-600/30 cursor-pointer transition-all transform hover:-translate-y-0.5"
+                >
+                  <ShieldCheck className="w-4 h-4" />
+                  <span>🛡️ Family Reversal: Tap to Cancel &amp; Refund 100%</span>
+                </button>
               </div>
 
               {/* ACTION BUTTONS (The Real Value Proposition) */}
@@ -886,6 +1106,350 @@ export const MockBank: React.FC<MockBankProps> = ({
           </div>
         </div>
       </div>
+
+      {/* ==================================================================== */}
+      {/* 2. GATEWAY SETTINGS MODAL (Real SMTP & Twilio SMS Configuration)      */}
+      {/* ==================================================================== */}
+      {showGatewayModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-150">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl max-w-xl w-full p-6 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-cyan-500/20 text-cyan-600 dark:text-cyan-400 flex items-center justify-center">
+                  <Settings className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-black text-slate-900 dark:text-white">
+                    Live Email &amp; SMS Gateway Settings
+                  </h3>
+                  <p className="text-xs text-slate-500">
+                    Sends emergency reversal alerts to the exact email &amp; phone you enter
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowGatewayModal(false)}
+                className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-900 dark:hover:text-white flex items-center justify-center cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Presets */}
+            <div className="space-y-2">
+              <label className="text-[11px] font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider block">
+                Quick Email Provider Preset:
+              </label>
+              <div className="grid grid-cols-3 gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSmtpPreset('gmail');
+                    setGatewayConfig({
+                      ...gatewayConfig,
+                      smtp_host: 'smtp.gmail.com',
+                      smtp_port: 587,
+                      smtp_user: gatewayConfig.smtp_user || guardianEmail,
+                    });
+                  }}
+                  className={`py-2 px-3 rounded-xl text-xs font-bold border text-center transition-all cursor-pointer ${
+                    smtpPreset === 'gmail'
+                      ? 'bg-rose-50 dark:bg-rose-950/40 border-rose-500 text-rose-600 dark:text-rose-300 ring-2 ring-rose-500/20'
+                      : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100'
+                  }`}
+                >
+                  Gmail (App Password)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSmtpPreset('outlook');
+                    setGatewayConfig({
+                      ...gatewayConfig,
+                      smtp_host: 'smtp-mail.outlook.com',
+                      smtp_port: 587,
+                      smtp_user: gatewayConfig.smtp_user || guardianEmail,
+                    });
+                  }}
+                  className={`py-2 px-3 rounded-xl text-xs font-bold border text-center transition-all cursor-pointer ${
+                    smtpPreset === 'outlook'
+                      ? 'bg-blue-50 dark:bg-blue-950/40 border-blue-500 text-blue-600 dark:text-blue-300 ring-2 ring-blue-500/20'
+                      : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100'
+                  }`}
+                >
+                  Outlook / Office 365
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSmtpPreset('custom')}
+                  className={`py-2 px-3 rounded-xl text-xs font-bold border text-center transition-all cursor-pointer ${
+                    smtpPreset === 'custom'
+                      ? 'bg-purple-50 dark:bg-purple-950/40 border-purple-500 text-purple-600 dark:text-purple-300 ring-2 ring-purple-500/20'
+                      : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100'
+                  }`}
+                >
+                  Custom SMTP
+                </button>
+              </div>
+
+              {smtpPreset === 'gmail' && (
+                <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 text-[11px] text-amber-800 dark:text-amber-300 leading-relaxed">
+                  💡 <strong>Gmail Tip:</strong> Use your regular Gmail address and a 16-character <strong>Google App Password</strong> (generate at <em>Google Account &rarr; Security &rarr; 2-Step Verification &rarr; App Passwords</em>).
+                </div>
+              )}
+            </div>
+
+            {/* SMTP Inputs */}
+            <div className="space-y-3 pt-1 border-t border-slate-100 dark:border-slate-800">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                1. Outgoing SMTP Mail Server
+              </h4>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                    SMTP Host
+                  </label>
+                  <input
+                    type="text"
+                    value={gatewayConfig.smtp_host || ''}
+                    onChange={(e) => setGatewayConfig({ ...gatewayConfig, smtp_host: e.target.value })}
+                    placeholder="smtp.gmail.com"
+                    className="w-full text-xs bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-900 dark:text-white font-mono"
+                  />
+                </div>
+                <div>
+                  <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                    SMTP Port
+                  </label>
+                  <input
+                    type="number"
+                    value={gatewayConfig.smtp_port || 587}
+                    onChange={(e) => setGatewayConfig({ ...gatewayConfig, smtp_port: parseInt(e.target.value) || 587 })}
+                    placeholder="587"
+                    className="w-full text-xs bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-900 dark:text-white font-mono"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                    Sender Email / Username
+                  </label>
+                  <input
+                    type="email"
+                    value={gatewayConfig.smtp_user || ''}
+                    onChange={(e) => setGatewayConfig({ ...gatewayConfig, smtp_user: e.target.value })}
+                    placeholder="your-email@gmail.com"
+                    className="w-full text-xs bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-900 dark:text-white font-mono"
+                  />
+                </div>
+                <div>
+                  <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                    App Password / Token
+                  </label>
+                  <input
+                    type="password"
+                    value={gatewayConfig.smtp_password || ''}
+                    onChange={(e) => setGatewayConfig({ ...gatewayConfig, smtp_password: e.target.value })}
+                    placeholder={gatewayConfig.smtp_password_configured ? '•••••••••••••••• (Saved)' : '16-character app password'}
+                    className="w-full text-xs bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-900 dark:text-white font-mono"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Test Email Button */}
+            <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-slate-900 dark:text-white">
+                  Verify Live Delivery to: <strong className="text-blue-500 font-mono">{guardianEmail}</strong>
+                </span>
+                <button
+                  type="button"
+                  onClick={handleTestEmail}
+                  disabled={testEmailStatus?.loading}
+                  className="px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-sm"
+                >
+                  <Send className="w-3.5 h-3.5" />
+                  <span>{testEmailStatus?.loading ? 'Sending...' : 'Send Live Test Email'}</span>
+                </button>
+              </div>
+
+              {testEmailStatus && (
+                <div
+                  className={`p-2.5 rounded-xl text-xs font-medium border leading-relaxed ${
+                    testEmailStatus.success
+                      ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800'
+                      : 'bg-rose-50 dark:bg-rose-950/40 text-rose-800 dark:text-rose-300 border-rose-300 dark:border-rose-800'
+                  }`}
+                >
+                  {testEmailStatus.message}
+                </div>
+              )}
+            </div>
+
+            {/* SMS Gateway (Twilio & Native SMS) */}
+            <div className="space-y-3 pt-1 border-t border-slate-100 dark:border-slate-800">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                2. SMS Gateway (Optional Twilio API)
+              </h4>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                <div>
+                  <label className="text-[10px] font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                    Twilio Account SID
+                  </label>
+                  <input
+                    type="text"
+                    value={gatewayConfig.twilio_sid || ''}
+                    onChange={(e) => setGatewayConfig({ ...gatewayConfig, twilio_sid: e.target.value })}
+                    placeholder="AC..."
+                    className="w-full text-xs bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-2.5 py-1.5 font-mono"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                    Twilio Auth Token
+                  </label>
+                  <input
+                    type="password"
+                    value={gatewayConfig.twilio_token || ''}
+                    onChange={(e) => setGatewayConfig({ ...gatewayConfig, twilio_token: e.target.value })}
+                    placeholder={gatewayConfig.twilio_token ? '••••••••' : 'Token'}
+                    className="w-full text-xs bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-2.5 py-1.5 font-mono"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                    From Phone #
+                  </label>
+                  <input
+                    type="text"
+                    value={gatewayConfig.twilio_from || ''}
+                    onChange={(e) => setGatewayConfig({ ...gatewayConfig, twilio_from: e.target.value })}
+                    placeholder="+1234567890"
+                    className="w-full text-xs bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-2.5 py-1.5 font-mono"
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between pt-1">
+                <span className="text-[11px] text-slate-500">
+                  Target Mobile: <strong className="text-emerald-500 font-mono">{guardianPhone}</strong>
+                </span>
+                <button
+                  type="button"
+                  onClick={handleTestSms}
+                  disabled={testSmsStatus?.loading}
+                  className="px-3 py-1 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 text-xs font-bold border border-slate-200 dark:border-slate-700 cursor-pointer"
+                >
+                  {testSmsStatus?.loading ? 'Sending SMS...' : 'Test SMS Gateway'}
+                </button>
+              </div>
+
+              {testSmsStatus && (
+                <div
+                  className={`p-2 rounded-xl text-xs font-medium border ${
+                    testSmsStatus.success
+                      ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800'
+                      : 'bg-rose-50 dark:bg-rose-950/40 text-rose-800 dark:text-rose-300 border-rose-300 dark:border-rose-800'
+                  }`}
+                >
+                  {testSmsStatus.message}
+                </div>
+              )}
+            </div>
+
+            {/* Modal Actions */}
+            <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
+              <button
+                type="button"
+                onClick={() => setShowGatewayModal(false)}
+                className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
+              >
+                Close
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  handleSaveGatewayConfig();
+                  setShowGatewayModal(false);
+                }}
+                className="px-5 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-700 text-white text-xs font-black uppercase tracking-wider cursor-pointer shadow-md shadow-cyan-600/30"
+              >
+                Save Settings
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ==================================================================== */}
+      {/* 3. EMAIL PREVIEW MODAL (Shows the exact HTML email sent to inbox)      */}
+      {/* ==================================================================== */}
+      {showEmailPreviewModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-150">
+          <div className="bg-[#0f172a] border border-slate-800 rounded-3xl max-w-2xl w-full p-5 shadow-2xl space-y-4 max-h-[92vh] flex flex-col">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-800 shrink-0">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-xl bg-rose-500/20 text-rose-400 flex items-center justify-center">
+                  <Mail className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-white">
+                    Live HTML Email Dispatched to: <span className="text-cyan-400 font-mono">{guardianEmail}</span>
+                  </h3>
+                  <span className="text-[11px] text-slate-400">
+                    High-impact responsive alert template with 1-Tap Reversal button
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <a
+                  href={`/bank/notifications/preview/${heldTransfer?.id || 'sample'}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="px-2.5 py-1 rounded-lg bg-slate-800 text-slate-300 hover:text-white text-xs font-semibold flex items-center gap-1 border border-slate-700"
+                >
+                  <ExternalLink className="w-3 h-3" />
+                  <span>Open in Tab</span>
+                </a>
+                <button
+                  onClick={() => setShowEmailPreviewModal(false)}
+                  className="w-8 h-8 rounded-full bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+
+            {/* Interactive Preview Iframe */}
+            <div className="grow overflow-hidden rounded-2xl border border-slate-800 bg-[#030712]">
+              <iframe
+                title="Email Preview"
+                src={`/bank/notifications/preview/${heldTransfer?.id || 'sample'}`}
+                className="w-full h-[65vh] border-0"
+              />
+            </div>
+
+            <div className="flex items-center justify-between pt-2 text-[11px] text-slate-400 shrink-0">
+              <span>💡 When your family member taps the red button on their phone, the money refunds immediately.</span>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowEmailPreviewModal(false);
+                  handleSimulateFamilyReversal();
+                }}
+                className="px-3 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold cursor-pointer"
+              >
+                Simulate Tapping Reversal
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

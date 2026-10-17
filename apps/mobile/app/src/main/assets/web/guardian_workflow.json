@@ -27,11 +27,17 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "http://scamshield-backend:8000/bank/audit-log",
+        "url": "http://scamshield-backend:8000/bank/dispatch/sms",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"event\": \"SMS_DISPATCHED_TO_GUARDIAN\",\n  \"guardian_phone\": \"{{ $json.guardian_phone }}\",\n  \"guardian_name\": \"{{ $json.guardian_name }}\",\n  \"hold_id\": \"{{ $json.hold_id }}\",\n  \"sms_text\": \"{{ $json.sms_body }}\",\n  \"reverse_link\": \"{{ $json.reverse_url }}\"\n}",
-        "options": {}
+        "jsonBody": "={\n  \"guardian_phone\": \"{{ $json.guardian_phone }}\",\n  \"guardian_name\": \"{{ $json.guardian_name }}\",\n  \"hold_id\": \"{{ $json.hold_id }}\",\n  \"sms_text\": \"{{ $json.sms_body }}\"\n}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
       },
       "id": "dispatch-sms",
       "name": "SMS Gateway: Send to Mobile Phone",
@@ -42,11 +48,17 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "http://scamshield-backend:8000/bank/audit-log",
+        "url": "http://scamshield-backend:8000/bank/dispatch/email",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"event\": \"RICH_EMAIL_DISPATCHED_TO_GUARDIAN\",\n  \"recipient_email\": \"{{ $json.guardian_email }}\",\n  \"recipient_name\": \"{{ $json.guardian_name }}\",\n  \"subject\": \"{{ $json.email_subject }}\",\n  \"hold_id\": \"{{ $json.hold_id }}\",\n  \"amount\": {{ $json.amount }},\n  \"html_ui_preview\": \"Rich responsive email generated with 1-Tap Reversal Button\"\n}",
-        "options": {}
+        "jsonBody": "={\n  \"recipient_email\": \"{{ $json.guardian_email }}\",\n  \"recipient_name\": \"{{ $json.guardian_name }}\",\n  \"subject\": \"{{ $json.email_subject }}\",\n  \"hold_id\": \"{{ $json.hold_id }}\",\n  \"amount\": {{ $json.amount }},\n  \"email_html\": {{ JSON.stringify($json.email_html) }}\n}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
       },
       "id": "dispatch-rich-email",
       "name": "Email Engine: Send Beautiful HTML Alert",
