@@ -21,8 +21,6 @@ import {
   PhoneCall,
   Landmark,
   Download,
-  FileDown,
-  Presentation,
   Workflow,
 } from 'lucide-react';
 
@@ -272,23 +270,7 @@ export const Header: React.FC<HeaderProps> = ({
                     </div>
                   </a>
 
-                  <a
-                    href="/CogniFlow_AI_Builder_Cup_Submission.pptx"
-                    download="CogniFlow_AI_Builder_Cup_Submission.pptx"
-                    className="flex items-center gap-2.5 p-2 rounded-xl hover:bg-blue-50 dark:hover:bg-blue-950/40 text-slate-800 dark:text-slate-200 group transition-all"
-                  >
-                    <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 shrink-0">
-                      <Presentation className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <span className="text-xs font-bold text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 block">
-                        Competition Pitch Deck
-                      </span>
-                      <span className="text-[10px] text-slate-500 dark:text-slate-400 block">
-                        910 KB &bull; Official PPTX Presentation
-                      </span>
-                    </div>
-                  </a>
+
 
                   <a
                     href="/guardian_workflow.json"
@@ -434,14 +416,6 @@ export const Header: React.FC<HeaderProps> = ({
               >
                 <Smartphone className="w-4 h-4" />
                 <span>Download Android APK (11.8 MB)</span>
-              </a>
-              <a
-                href="/CogniFlow_AI_Builder_Cup_Submission.pptx"
-                download="CogniFlow_AI_Builder_Cup_Submission.pptx"
-                className="w-full flex items-center justify-center gap-2 p-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-md transition-all"
-              >
-                <Presentation className="w-4 h-4" />
-                <span>Download Submission PPTX (910 KB)</span>
               </a>
             </div>
           </div>

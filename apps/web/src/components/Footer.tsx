@@ -96,14 +96,6 @@ export const Footer: React.FC<FooterProps> = ({ onNavigateTab }) => {
                 <Download className="w-3.5 h-3.5" />
                 <span>Download Android APK</span>
               </a>
-              <a
-                href="/CogniFlow_AI_Builder_Cup_Submission.pptx"
-                download="CogniFlow_AI_Builder_Cup_Submission.pptx"
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs transition-all shadow-xs"
-              >
-                <Download className="w-3.5 h-3.5" />
-                <span>Download Slide Deck</span>
-              </a>
             </div>
           </div>
 
