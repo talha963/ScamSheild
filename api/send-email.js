@@ -151,7 +151,7 @@ module.exports = async function handler(req, res) {
     return res.status(200).json({
       status: 'online',
       service: 'ScamShield Real-Time Email Gateway',
-      version: '2.0.0',
+      version: '2.1.0',
       timestamp: new Date().toISOString(),
     });
   }
@@ -160,6 +160,7 @@ module.exports = async function handler(req, res) {
     return res.status(405).json({ success: false, error: 'Method Not Allowed' });
   }
 
+  let user = '';
   try {
     let body = req.body;
     if (typeof body === 'string') {
@@ -172,10 +173,11 @@ module.exports = async function handler(req, res) {
     body = body || {};
 
     const host = (body.smtp_host || body.host || 'smtp.gmail.com').trim();
-    let port = parseInt(body.smtp_port || body.port || 587, 10);
-    const user = (body.smtp_user || body.user || body.email || '').trim();
+    let port = parseInt(body.smtp_port || body.port || 465, 10);
+    user = (body.smtp_user || body.user || body.email || '').trim();
     const rawPass = (body.smtp_password || body.password || body.pass || '').trim();
-    const pass = rawPass.replace(/\s+/g, ''); // strip any spaces from app password
+    // Clean spaces from Google App Passwords
+    const pass = rawPass.replace(/\s+/g, '');
     const to = (body.to || body.recipient || body.guardian_email || user).trim();
     const subject = body.subject || `🚨 URGENT: High-Risk Transfer Intercepted for Tariq Mahmood (PKR ${Number(body.amount || 85000).toLocaleString()})`;
     const holdId = body.hold_id || body.holdId || `TXN-${Math.floor(1000 + Math.random() * 9000)}`;
@@ -206,11 +208,6 @@ module.exports = async function handler(req, res) {
       });
     }
 
-    // Determine security based on port or host
-    // Gmail supports 465 (SSL) and 587 (STARTTLS)
-    // In serverless environments, port 465 with direct TLS is exceptionally reliable
-    const isSecure = port === 465;
-
     const htmlBody = body.html || generateAlertHtml({
       holdId,
       amount,
@@ -227,41 +224,73 @@ module.exports = async function handler(req, res) {
       text: `SCAMSHIELD URGENT ALERT: Transfer of PKR ${Number(amount).toLocaleString()} initiated during unknown caller pressure. Funds are FROZEN in 15-minute escrow. Tap here to reverse: https://scam-sheild-six.vercel.app/?action=reverse&hold_id=${holdId}`,
     };
 
-    // Attempt 1: Using provided port
-    let transportConfig = {
-      host: host,
-      port: port,
-      secure: isSecure,
-      auth: {
-        user: user,
-        pass: pass,
-      },
-      connectionTimeout: 12000,
-      greetingTimeout: 8000,
-      socketTimeout: 15000,
-      tls: {
-        rejectUnauthorized: false, // Prevents self-signed cert or proxy handshake issues
-      },
-    };
+    const isGmail = host.includes('gmail.com') || (user && user.toLowerCase().endsWith('@gmail.com'));
 
-    let transporter = nodemailer.createTransport(transportConfig);
+    // Configure Nodemailer with an explicit FQDN `name` so it NEVER issues HELO [169.254.x.x] link-local addresses
+    let transporter;
+    if (isGmail) {
+      transporter = nodemailer.createTransport({
+        service: 'gmail',
+        host: 'smtp.gmail.com',
+        port: 465,
+        secure: true,
+        name: 'scam-sheild-six.vercel.app',
+        auth: {
+          user: user,
+          pass: pass,
+        },
+        connectionTimeout: 15000,
+        greetingTimeout: 10000,
+        socketTimeout: 20000,
+        tls: {
+          rejectUnauthorized: false,
+        },
+      });
+    } else {
+      transporter = nodemailer.createTransport({
+        host: host,
+        port: port || 587,
+        secure: port === 465,
+        name: 'scam-sheild-six.vercel.app',
+        auth: {
+          user: user,
+          pass: pass,
+        },
+        connectionTimeout: 15000,
+        greetingTimeout: 10000,
+        socketTimeout: 20000,
+        tls: {
+          rejectUnauthorized: false,
+        },
+      });
+    }
 
     let info;
     try {
       info = await transporter.sendMail(mailOptions);
     } catch (primaryErr) {
-      // If port was 587 and failed, attempt port 465 (or vice-versa for Gmail)
-      if (host.includes('gmail.com')) {
-        const altPort = port === 587 ? 465 : 587;
+      // If primary send threw an error and it's Gmail, attempt direct SSL port 465 explicit connection
+      if (isGmail) {
         try {
-          transporter = nodemailer.createTransport({
-            ...transportConfig,
-            port: altPort,
-            secure: altPort === 465,
+          const directTransporter = nodemailer.createTransport({
+            host: 'smtp.gmail.com',
+            port: 465,
+            secure: true,
+            name: 'scam-sheild-six.vercel.app',
+            auth: {
+              user: user,
+              pass: pass,
+            },
+            connectionTimeout: 15000,
+            greetingTimeout: 10000,
+            socketTimeout: 20000,
+            tls: {
+              rejectUnauthorized: false,
+            },
           });
-          info = await transporter.sendMail(mailOptions);
+          info = await directTransporter.sendMail(mailOptions);
         } catch (secondaryErr) {
-          throw primaryErr; // throw original or clearer error
+          throw secondaryErr;
         }
       } else {
         throw primaryErr;
@@ -279,10 +308,14 @@ module.exports = async function handler(req, res) {
     });
   } catch (err) {
     let friendlyMessage = err.message || 'SMTP transmission error';
-    if (err.code === 'EAUTH' || (err.response && err.response.includes('535'))) {
-      friendlyMessage = 'Gmail Authentication Failed: Google rejected the username or app password. Please ensure you are using a 16-character Google App Password (from https://myaccount.google.com/apppasswords), NOT your normal Gmail login password.';
+    const msg = ((err.message || '') + ' ' + (err.response || '')).toLowerCase();
+
+    if (err.code === 'EAUTH' || msg.includes('535') || msg.includes('invalid credentials') || msg.includes('badcredentials') || msg.includes('username and password not accepted')) {
+      friendlyMessage = `Google Authentication Rejected: Google rejected the App Password for '${user}'. Please verify: (1) Make sure you created a 16-character Google App Password from https://myaccount.google.com/apppasswords (NOT your personal Gmail password). (2) Confirm that 2-Step Verification is turned ON for this Google account.`;
+    } else if (msg.includes('mail relay denied') || msg.includes('550')) {
+      friendlyMessage = `Google Relay Error: Connection was blocked. Please verify your 16-character Google App Password at https://myaccount.google.com/apppasswords.`;
     } else if (err.code === 'ETIMEDOUT' || err.code === 'ESOCKETTIMEDOUT') {
-      friendlyMessage = 'Connection timed out connecting to SMTP server. Please verify your host and port settings.';
+      friendlyMessage = 'Connection timed out connecting to SMTP server. Please verify your internet and gateway configuration.';
     }
 
     return res.status(200).json({

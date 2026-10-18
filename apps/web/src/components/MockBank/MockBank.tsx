@@ -176,7 +176,7 @@ export const MockBank: React.FC<MockBankProps> = ({
     }
     return {
       smtp_host: 'smtp.gmail.com',
-      smtp_port: 587,
+      smtp_port: 465,
       smtp_user: 'tk706051@gmail.com',
       smtp_password: '',
       smtp_from: '',
@@ -342,7 +342,7 @@ export const MockBank: React.FC<MockBankProps> = ({
       const payload = {
         ...gatewayConfig,
         smtp_host: gatewayConfig.smtp_host || 'smtp.gmail.com',
-        smtp_port: gatewayConfig.smtp_port || 587,
+        smtp_port: gatewayConfig.smtp_port || 465,
         smtp_user: cleanUser,
         smtp_password: cleanPassword,
         to: targetEmail,
@@ -554,7 +554,7 @@ export const MockBank: React.FC<MockBankProps> = ({
       let effectivePass = (gatewayConfig.smtp_password || '').trim().replace(/\s+/g, '');
       let effectiveUser = (gatewayConfig.smtp_user || guardianEmail).trim();
       let effectiveHost = gatewayConfig.smtp_host || 'smtp.gmail.com';
-      let effectivePort = gatewayConfig.smtp_port || 587;
+      let effectivePort = gatewayConfig.smtp_port || 465;
 
       if (!effectivePass && savedCfgStr) {
         try {
@@ -1447,7 +1447,7 @@ export const MockBank: React.FC<MockBankProps> = ({
                     setGatewayConfig({
                       ...gatewayConfig,
                       smtp_host: 'smtp.gmail.com',
-                      smtp_port: 587,
+                      smtp_port: 465,
                       smtp_user: gatewayConfig.smtp_user || guardianEmail,
                     });
                   }}
@@ -1532,9 +1532,9 @@ export const MockBank: React.FC<MockBankProps> = ({
                   </label>
                   <input
                     type="number"
-                    value={gatewayConfig.smtp_port || 587}
-                    onChange={(e) => setGatewayConfig({ ...gatewayConfig, smtp_port: parseInt(e.target.value) || 587 })}
-                    placeholder="587"
+                    value={gatewayConfig.smtp_port || 465}
+                    onChange={(e) => setGatewayConfig({ ...gatewayConfig, smtp_port: parseInt(e.target.value) || 465 })}
+                    placeholder="465"
                     className="w-full text-xs bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-900 dark:text-white font-mono"
                   />
                 </div>
