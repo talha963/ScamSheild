@@ -36,13 +36,61 @@ export const GuardianCircle: React.FC<GuardianCircleProps> = ({
   const [actionStatus, setActionStatus] = useState<'pending' | 'approved' | 'blocked'>('pending');
   const [secondsRemaining, setSecondsRemaining] = useState<number>(84);
   const [n8nStatus, setN8nStatus] = useState<string | null>(null);
+  const [effectiveAmount, setEffectiveAmount] = useState<number>(heldAmount);
+  const [effectiveReason, setEffectiveReason] = useState<string>(heldReason);
+  const [activeHoldId, setActiveHoldId] = useState<string>('hold_active');
+
+  // Automatic real-time synchronization with Mock Bank's active hold & n8n execution log
+  React.useEffect(() => {
+    const saved = localStorage.getItem('scamshield_active_hold');
+    if (saved) {
+      try {
+        const h = JSON.parse(saved);
+        if (h) {
+          if (h.amount) setEffectiveAmount(Number(h.amount));
+          if (h.reason) setEffectiveReason(h.reason);
+          if (h.id || h.hold_id) setActiveHoldId(h.id || h.hold_id);
+
+          if (h.expiresAt && h.expiresAt > Date.now()) {
+            setSecondsRemaining(Math.max(1, Math.floor((h.expiresAt - Date.now()) / 1000)));
+          }
+          if (h.status === 'reversed_by_guardian') {
+            setActionStatus('blocked');
+          } else if (h.status === 'approved' || h.status === 'approved_by_guardian') {
+            setActionStatus('approved');
+          } else {
+            setActionStatus('pending');
+          }
+        }
+      } catch (e) {}
+    }
+
+    const n8nSaved = localStorage.getItem('scamshield_n8n_last_exec');
+    if (n8nSaved) {
+      try {
+        const nLog = JSON.parse(n8nSaved);
+        if (nLog && nLog.timestamp) {
+          setN8nStatus(`⚡ n8n Pipeline Synchronized: Dispatched WhatsApp bot alert & SMS to ${nLog.recipient} for PKR ${Number(nLog.amount || 85000).toLocaleString()}`);
+        }
+      } catch (e) {}
+    }
+  }, [isHoldActive]);
+
+  // Live countdown ticker
+  React.useEffect(() => {
+    if (actionStatus !== 'pending' || secondsRemaining <= 0) return;
+    const timer = setInterval(() => {
+      setSecondsRemaining((prev) => Math.max(0, prev - 1));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [actionStatus, secondsRemaining]);
 
   const [showWorkflowCanvas, setShowWorkflowCanvas] = useState<boolean>(false);
 
   const handleApprove = async () => {
     setActionStatus('approved');
     try {
-      await fetch('/bank/guardian-decision?action=approve&hold_id=hold_active&guardian=Hamza%20Tariq');
+      await fetch(`/bank/guardian-decision?action=approve&hold_id=${activeHoldId}&guardian=Hamza%20Tariq`);
     } catch {}
     if (onApproveHold) onApproveHold();
   };
@@ -50,7 +98,7 @@ export const GuardianCircle: React.FC<GuardianCircleProps> = ({
   const handleBlock = async () => {
     setActionStatus('blocked');
     try {
-      await fetch('/bank/guardian-decision?action=block&hold_id=hold_active&guardian=Hamza%20Tariq');
+      await fetch(`/bank/guardian-decision?action=block&hold_id=${activeHoldId}&guardian=Hamza%20Tariq`);
     } catch {}
     if (onBlockHold) onBlockHold();
   };
@@ -63,7 +111,7 @@ export const GuardianCircle: React.FC<GuardianCircleProps> = ({
       const payload = {
         hold_id: `hold_${Math.random().toString(36).substring(2, 8)}`,
         user_name: 'Tariq Mahmood',
-        amount: heldAmount,
+        amount: effectiveAmount,
         currency: 'PKR',
         tier: 3,
         scam_type: 'Urgent Police / Bank Imposter Call Detected',
@@ -272,10 +320,10 @@ export const GuardianCircle: React.FC<GuardianCircleProps> = ({
                 </p>
                 <p className="text-[12px] leading-relaxed text-slate-700 dark:text-slate-300">
                   Your parent is currently on an active call with an unknown caller. A transfer of{' '}
-                  <strong className="text-slate-900 dark:text-white font-black">Rs. {heldAmount.toLocaleString()}</strong> to a new payee was attempted while an OTP was requested verbally.
+                  <strong className="text-slate-900 dark:text-white font-black">Rs. {effectiveAmount.toLocaleString()}</strong> to a new payee was attempted while an OTP was requested verbally.
                 </p>
                 <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 font-mono text-[11px] text-slate-800 dark:text-cyan-300 font-bold">
-                  Reason: {heldReason}
+                  Reason: {effectiveReason}
                 </div>
                 <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 pt-1">
                   <span className="flex items-center gap-1 text-amber-600 dark:text-amber-400 font-bold">

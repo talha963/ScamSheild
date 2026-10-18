@@ -1163,20 +1163,34 @@ export const MockBank: React.FC<MockBankProps> = ({
                   </div>
 
                   {/* Email Channel */}
-                  <div className="flex items-center justify-between pt-1 border-t border-slate-100 dark:border-slate-800">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-1 border-t border-slate-100 dark:border-slate-800">
                     <span className="flex items-center gap-1.5 text-slate-600 dark:text-slate-400">
                       <Mail className="w-3.5 h-3.5 text-blue-500" />
                       <span>Rich Email to:</span>
                     </span>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1.5 flex-wrap">
                       <span className="font-mono font-bold text-slate-900 dark:text-white">{guardianEmail}</span>
+                      <a
+                        href={`mailto:${guardianEmail}?subject=${encodeURIComponent(
+                          `🚨 URGENT SCAMSHIELD ALERT: High-Risk Transfer Intercepted for Tariq Mahmood (PKR ${heldTransfer.amount.toLocaleString()})`
+                        )}&body=${encodeURIComponent(
+                          `🚨 SCAMSHIELD EMERGENCY FAMILY ALERT\n\nProtected Family Member: Tariq Mahmood\nAmount Held Safe in 15-Minute Escrow: PKR ${heldTransfer.amount.toLocaleString()}\nSuspicious Destination: Ali Raza (Unverified Mule Account)\nDetection Reason: Active unknown caller requesting OTP verbally\n\nIf this was a scam call, tap below to reverse and refund immediately:\nhttps://scam-sheild-six.vercel.app/?action=block&hold_id=${heldTransfer.id}\n\n(To approve if legitimate: https://scam-sheild-six.vercel.app/?action=approve&hold_id=${heldTransfer.id})`
+                        )}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="px-2 py-0.5 rounded-lg bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 text-[10px] font-bold hover:bg-emerald-100 flex items-center gap-1 cursor-pointer"
+                        title="Send actual email to inbox via your mail app"
+                      >
+                        <Mail className="w-2.5 h-2.5" />
+                        <span>Send to Inbox</span>
+                      </a>
                       <button
                         type="button"
                         onClick={() => setShowEmailPreviewModal(true)}
                         className="px-2 py-0.5 rounded-lg bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 text-[10px] font-bold hover:bg-blue-100 flex items-center gap-1 cursor-pointer"
                       >
                         <Eye className="w-2.5 h-2.5" />
-                        <span>Preview Email</span>
+                        <span>Preview HTML</span>
                       </button>
                     </div>
                   </div>
@@ -1657,7 +1671,57 @@ export const MockBank: React.FC<MockBankProps> = ({
             <div className="grow overflow-hidden rounded-2xl border border-slate-800 bg-[#030712]">
               <iframe
                 title="Email Preview"
-                src={`/bank/notifications/preview/${heldTransfer?.id || 'sample'}`}
+                srcDoc={`<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    body { margin: 0; padding: 20px; background-color: #030712; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: #f9fafb; }
+    .card { max-width: 540px; margin: 0 auto; background: #0f172a; border: 1px solid #1e293b; border-radius: 20px; padding: 24px; box-shadow: 0 20px 40px rgba(0,0,0,0.5); }
+    .badge { display: inline-block; padding: 5px 12px; background: rgba(225, 29, 72, 0.2); border: 1px solid #f43f5e; border-radius: 99px; color: #fda4af; font-size: 11px; font-weight: 800; text-transform: uppercase; }
+    h2 { margin: 12px 0 4px; font-size: 20px; font-weight: 900; color: #ffffff; }
+    .alert-box { background: rgba(225, 29, 72, 0.1); border-left: 4px solid #f43f5e; padding: 14px; border-radius: 10px; margin: 16px 0; font-size: 13px; line-height: 1.5; color: #fecdd3; }
+    .amount { font-size: 26px; font-weight: 900; color: #38bdf8; margin: 8px 0; }
+    .btn-reverse { display: block; background: #e11d48; color: #ffffff; text-decoration: none; padding: 16px; border-radius: 12px; font-size: 15px; font-weight: 900; text-align: center; margin: 18px 0; box-shadow: 0 10px 20px rgba(225, 29, 72, 0.4); }
+    .btn-approve { display: inline-block; background: #047857; color: #ffffff; text-decoration: none; padding: 10px 18px; border-radius: 8px; font-size: 12px; font-weight: 700; }
+    .urdu { margin-top: 18px; padding: 12px; background: rgba(16, 185, 129, 0.08); border: 1px dashed #059669; border-radius: 10px; text-align: right; direction: rtl; font-size: 13px; color: #6ee7b7; font-family: serif; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <span class="badge">🚨 Emergency Family Interception</span>
+    <h2>ScamShield Live Defense Network</h2>
+    <p style="color: #94a3b8; font-size: 12px; margin: 4px 0 16px;">Automated Alert for <strong>${guardianName}</strong></p>
+    
+    <div class="alert-box">
+      <strong>High-Risk Transfer Paused During Coerced Call!</strong><br>
+      Your family member <strong>Tariq Mahmood</strong> attempted to transfer funds during a suspected scam call. ScamShield locked the money in a <strong>15-Minute Safety Escrow</strong>.
+    </div>
+
+    <div style="background: #1e293b; padding: 16px; border-radius: 12px; margin-bottom: 18px; font-size: 12px;">
+      <span style="color: #94a3b8; text-transform: uppercase; font-weight: 700; font-size: 10px;">Protected Account:</span><br>
+      <strong style="color: #ffffff; font-size: 14px;">Tariq Mahmood (Pension Account)</strong>
+      <div class="amount">PKR ${(heldTransfer?.amount || 85000).toLocaleString()} <span style="font-size: 12px; color: #34d399; font-weight: normal;">(100% Held Safe in Bank Escrow)</span></div>
+      <span style="color: #94a3b8; text-transform: uppercase; font-weight: 700; font-size: 10px;">Suspicious Payee:</span><br>
+      <strong style="color: #f87171; font-size: 13px;">${heldTransfer?.recipientName || 'Ali Raza (Unverified Mule Account)'}</strong>
+    </div>
+
+    <a href="https://scam-sheild-six.vercel.app/?action=block&hold_id=${heldTransfer?.id || 'hold_8f21'}" target="_blank" class="btn-reverse">
+      🛡️ REVERSE TRANSACTION & REFUND MONEY NOW
+    </a>
+    <p style="font-size: 11px; color: #94a3b8; text-align: center; margin-top: -8px;">Tapping this button cancels the transfer immediately and restores funds to Tariq Mahmood's balance.</p>
+
+    <div style="text-align: center; margin-top: 16px; padding-top: 14px; border-top: 1px solid #1e293b;">
+      <span style="font-size: 11px; color: #64748b;">Only if verified legitimate:</span><br>
+      <a href="https://scam-sheild-six.vercel.app/?action=approve&hold_id=${heldTransfer?.id || 'hold_8f21'}" target="_blank" class="btn-approve" style="margin-top: 6px;">✓ Approve Transfer</a>
+    </div>
+
+    <div class="urdu">
+      یہ رقم ابھی بھی بینک کے سیکیورٹی ایسکرو میں محفوظ ہے۔ فراڈیے کے اکاؤنٹ میں نہیں گئی۔ اگر یہ فراڈ ہے تو فوری اوپر دیے گئے ریورس بٹن سے رقم واپس کریں۔
+    </div>
+  </div>
+</body>
+</html>`}
                 className="w-full h-[65vh] border-0"
               />
             </div>
