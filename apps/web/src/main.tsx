@@ -46,7 +46,7 @@ if (typeof window !== 'undefined') {
         }
         const res = await originalFetch(targetUrl, { ...init, headers });
         const contentType = res.headers.get('content-type') || '';
-        if (contentType.includes('application/json')) {
+        if (res.ok && contentType.includes('application/json')) {
           return res;
         }
       } catch {

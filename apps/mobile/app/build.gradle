@@ -18,7 +18,7 @@ android {
         //   ./gradlew assembleDebug -Pscamshield.serverUrl=https://your-server
         // Left empty, the app asks the user for it on first run.
         buildConfigField "String", "DEFAULT_SERVER_URL",
-                "\"${project.findProperty('scamshield.serverUrl') ?: 'https://flatbed-carve-imprint.ngrok-free.dev'}\""
+                "\"${project.findProperty('scamshield.serverUrl') ?: 'http://10.0.2.2:8000'}\""
     }
 
     buildFeatures {

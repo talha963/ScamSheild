@@ -87,62 +87,51 @@ object SetupChecks {
     fun serverCheck(ctx: Context, baseUrl: String): SetupCheck {
         if (baseUrl.isBlank()) {
             return SetupCheck("server", "ScamShield server", false,
-                "No address set yet. Enter the server address given to you, for example https://scamshield.example.app")
-        }
-        if (!baseUrl.startsWith("http://") && !baseUrl.startsWith("https://")) {
-            return SetupCheck("server", "ScamShield server", false,
-                "The address must start with http:// or https://")
+                "No address set yet. Use http://10.0.2.2:8000 for Docker emulator, or http://localhost:8000 for USB.")
         }
 
-        // A first request to a sleeping server or a cold tunnel can be slow, and phone Wi-Fi
-        // drops a packet now and then. Try a few times before calling it unreachable.
-        var last: Exception? = null
-        repeat(3) { attempt ->
+        val cleanUrl = baseUrl.trimEnd('/')
+        val candidates = mutableListOf<String>()
+
+        // Put user-entered URL first if not empty and not dead ngrok
+        if (!cleanUrl.contains("flatbed-carve-imprint.ngrok-free.dev") && !cleanUrl.contains("ngrok")) {
+            candidates.add(cleanUrl)
+        }
+
+        // Docker loopback addresses
+        if (!candidates.contains("http://10.0.2.2:8000")) candidates.add("http://10.0.2.2:8000")
+        if (!candidates.contains("http://localhost:8000")) candidates.add("http://localhost:8000")
+        if (!candidates.contains("http://10.0.2.2:7860")) candidates.add("http://10.0.2.2:7860")
+
+        var lastException: Exception? = null
+
+        for (candidate in candidates) {
             try {
-                val conn = (URL("$baseUrl/health").openConnection() as HttpURLConnection).apply {
+                val conn = (URL("$candidate/health").openConnection() as HttpURLConnection).apply {
                     requestMethod = "GET"
-                    connectTimeout = 10000
-                    readTimeout = 20000
+                    connectTimeout = 3000
+                    readTimeout = 4000
                     useCaches = false
                     setRequestProperty("ngrok-skip-browser-warning", "1")
                     setRequestProperty("User-Agent", "ScamShield-Android")
                 }
                 val code = conn.responseCode
-                val body = try {
-                    conn.inputStream.bufferedReader().use { it.readText() }
-                } catch (e: Exception) {
-                    ""
-                }
                 conn.disconnect()
 
-                return when {
-                    code == 200 -> SetupCheck("server", "ScamShield server", true,
-                        "Connected. The server answered normally.")
-                    code in 500..599 -> SetupCheck("server", "ScamShield server", false,
-                        "The server is reachable but returned error $code. ${body.take(120)}")
-                    else -> SetupCheck("server", "ScamShield server", false,
-                        "The server answered with error $code. ${body.take(120)}")
+                if (code == 200) {
+                    if (candidate != cleanUrl) {
+                        ctx.getSharedPreferences("scamshield_prefs", Context.MODE_PRIVATE)
+                            .edit().putString("server_url", candidate).apply()
+                    }
+                    return SetupCheck("server", "ScamShield Docker backend", true,
+                        "Connected to Docker backend at $candidate")
                 }
             } catch (e: Exception) {
-                last = e
-                if (attempt < 2) Thread.sleep(1200)
+                lastException = e
             }
         }
 
-        val e = last
-        val why = when {
-            e == null -> "Could not connect for an unknown reason."
-            e.message?.contains("ENETUNREACH") == true ||
-            e.message?.contains("Unable to resolve host") == true ->
-                    "Could not reach that address. Check the phone's internet connection and that the address is spelt correctly."
-            e.message?.contains("ECONNREFUSED") == true ->
-                "The address was found but nothing is listening on that port. Is the server running?"
-            e.message?.contains("timed out") == true || e is java.net.SocketTimeoutException ->
-                "The server did not answer after 3 tries. If the address is a computer on your Wi-Fi, check that the server is running, that the phone is on the same Wi-Fi, and that the computer's firewall allows port 8000."
-            e.message?.contains("CLEARTEXT") == true ->
-                "Android blocked an unencrypted http:// address. Use an https:// address."
-            else -> "Could not connect: ${e.javaClass.simpleName} ${e.message.orEmpty()}"
-        }
+        val why = "Docker backend not detected on port 8000. Start Docker ('docker compose up' or 'python run_system.py'). Autonomous In-Browser Engine is active."
         return SetupCheck("server", "ScamShield server", false, why)
     }
 

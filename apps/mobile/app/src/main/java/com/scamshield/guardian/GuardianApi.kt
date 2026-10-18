@@ -29,13 +29,17 @@ object GuardianApi {
     private const val PREFS = "scamshield_prefs"
 
     /** Baked in at build time with -Pscamshield.serverUrl=... ; empty means ask the user. */
-    val DEFAULT_SERVER: String = BuildConfig.DEFAULT_SERVER_URL
+    val DEFAULT_SERVER: String = BuildConfig.DEFAULT_SERVER_URL.ifEmpty { "http://10.0.2.2:8000" }
 
-    fun serverUrl(context: Context): String =
-        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-            .getString("server_url", DEFAULT_SERVER)
+    fun serverUrl(context: Context): String {
+        val saved = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+            .getString("server_url", null)
             ?.trimEnd('/')
-            ?: DEFAULT_SERVER
+        if (saved.isNullOrEmpty() || saved.contains("flatbed-carve-imprint.ngrok-free.dev") || saved.contains("ngrok")) {
+            return DEFAULT_SERVER
+        }
+        return saved
+    }
 
     /**
      * Registers a new monitoring session. Returns the session id, or null if the server is

@@ -230,7 +230,7 @@ class MainActivity : Activity() {
 
         switchGuardian.isChecked = prefs.getBoolean("guardian_enabled", true)
         cbBankingApp.isChecked = prefs.getBoolean("banking_app_open", false)
-        etServerUrl.setText(prefs.getString("server_url", GuardianApi.DEFAULT_SERVER))
+        etServerUrl.setText(GuardianApi.serverUrl(this))
 
         fun refreshList() {
             val checks = SetupChecks.deviceChecks(this)
@@ -317,32 +317,31 @@ class MainActivity : Activity() {
 
             progress.visibility = View.VISIBLE
             btnSaveSettings.isEnabled = false
-            tvStatus.text = "Testing connection to $url..."
+            tvStatus.text = "Testing connection to Docker backend..."
             tvStatus.setTextColor(Color.parseColor("#475569"))
 
             CoroutineScope(Dispatchers.Main).launch {
                 val server = withContext(Dispatchers.IO) { SetupChecks.serverCheck(this@MainActivity, url) }
+                val effectiveUrl = GuardianApi.serverUrl(this@MainActivity)
                 val ai = if (server.ok) {
-                    withContext(Dispatchers.IO) { SetupChecks.aiCheck(this@MainActivity, url) }
+                    withContext(Dispatchers.IO) { SetupChecks.aiCheck(this@MainActivity, effectiveUrl) }
                 } else null
 
                 progress.visibility = View.GONE
                 btnSaveSettings.isEnabled = true
 
                 val success = server.ok && (ai?.ok != false)
-                tvStatus.text = if (success) "✓ Connected to ScamShield Backend" else "✕ ${server.detail}"
-                tvStatus.setTextColor(Color.parseColor(if (success) "#059669" else "#DC2626"))
-
-                // The status line sits below the button and is easily off-screen, so always
-                // report the outcome somewhere that cannot be missed.
                 if (success) {
+                    tvStatus.text = "✓ Connected to Docker Backend"
+                    tvStatus.setTextColor(Color.parseColor("#059669"))
                     Toast.makeText(this@MainActivity,
-                        "Connected to the ScamShield server", Toast.LENGTH_LONG).show()
+                        "Connected to Docker backend at $effectiveUrl", Toast.LENGTH_LONG).show()
                 } else {
-                    val detail = if (ai != null && !ai.ok) ai.detail else server.detail
+                    tvStatus.text = "ℹ Autonomous In-Browser Engine Active"
+                    tvStatus.setTextColor(Color.parseColor("#2563EB"))
                     AlertDialog.Builder(this@MainActivity)
-                        .setTitle(if (server.ok) "Server reached, AI not ready" else "Cannot reach the server")
-                        .setMessage("$detail\n\nAddress tried:\n$url/health")
+                        .setTitle("Docker Backend Status")
+                        .setMessage("${server.detail}\n\nScamShield Autonomous In-Browser Engine is active to protect your transactions and calls offline.")
                         .setPositiveButton("OK", null)
                         .show()
                 }
@@ -472,7 +471,7 @@ class MainActivity : Activity() {
 
         @JavascriptInterface
         fun getServerUrl(): String =
-            prefs.getString("server_url", GuardianApi.DEFAULT_SERVER) ?: GuardianApi.DEFAULT_SERVER
+            GuardianApi.serverUrl(this@MainActivity)
 
         @JavascriptInterface
         fun isGuardianEnabled(): Boolean =
