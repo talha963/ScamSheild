@@ -87,18 +87,18 @@ object SetupChecks {
     fun serverCheck(ctx: Context, baseUrl: String): SetupCheck {
         if (baseUrl.isBlank()) {
             return SetupCheck("server", "ScamShield server", false,
-                "No address set yet. Use http://10.0.2.2:8000 for Docker emulator, or http://localhost:8000 for USB.")
+                "No address set yet. Use https://flatbed-carve-imprint.ngrok-free.dev or http://10.0.2.2:8000.")
         }
 
         val cleanUrl = baseUrl.trimEnd('/')
         val candidates = mutableListOf<String>()
 
-        // Put user-entered URL first if not empty and not dead ngrok
-        if (!cleanUrl.contains("flatbed-carve-imprint.ngrok-free.dev") && !cleanUrl.contains("ngrok")) {
+        if (cleanUrl.isNotBlank()) {
             candidates.add(cleanUrl)
         }
 
-        // Docker loopback addresses
+        val defaultNgrok = "https://flatbed-carve-imprint.ngrok-free.dev"
+        if (!candidates.contains(defaultNgrok)) candidates.add(defaultNgrok)
         if (!candidates.contains("http://10.0.2.2:8000")) candidates.add("http://10.0.2.2:8000")
         if (!candidates.contains("http://localhost:8000")) candidates.add("http://localhost:8000")
         if (!candidates.contains("http://10.0.2.2:7860")) candidates.add("http://10.0.2.2:7860")
@@ -123,15 +123,15 @@ object SetupChecks {
                         ctx.getSharedPreferences("scamshield_prefs", Context.MODE_PRIVATE)
                             .edit().putString("server_url", candidate).apply()
                     }
-                    return SetupCheck("server", "ScamShield Docker backend", true,
-                        "Connected to Docker backend at $candidate")
+                    return SetupCheck("server", "ScamShield backend", true,
+                        "Connected to backend at $candidate")
                 }
             } catch (e: Exception) {
                 lastException = e
             }
         }
 
-        val why = "Docker backend not detected on port 8000. Start Docker ('docker compose up' or 'python run_system.py'). Autonomous In-Browser Engine is active."
+        val why = "Backend not detected on ngrok or port 8000. Start Docker ('docker compose up' or 'python run_system.py') or ngrok tunnel. Autonomous In-Browser Engine is active."
         return SetupCheck("server", "ScamShield server", false, why)
     }
 

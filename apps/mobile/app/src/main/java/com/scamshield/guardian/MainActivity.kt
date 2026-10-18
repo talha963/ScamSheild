@@ -317,7 +317,7 @@ class MainActivity : Activity() {
 
             progress.visibility = View.VISIBLE
             btnSaveSettings.isEnabled = false
-            tvStatus.text = "Testing connection to Docker backend..."
+            tvStatus.text = "Testing connection to server..."
             tvStatus.setTextColor(Color.parseColor("#475569"))
 
             CoroutineScope(Dispatchers.Main).launch {
@@ -332,15 +332,15 @@ class MainActivity : Activity() {
 
                 val success = server.ok && (ai?.ok != false)
                 if (success) {
-                    tvStatus.text = "✓ Connected to Docker Backend"
+                    tvStatus.text = "✓ Connected to ScamShield Backend"
                     tvStatus.setTextColor(Color.parseColor("#059669"))
                     Toast.makeText(this@MainActivity,
-                        "Connected to Docker backend at $effectiveUrl", Toast.LENGTH_LONG).show()
+                        "Connected to backend at $effectiveUrl", Toast.LENGTH_LONG).show()
                 } else {
                     tvStatus.text = "ℹ Autonomous In-Browser Engine Active"
                     tvStatus.setTextColor(Color.parseColor("#2563EB"))
                     AlertDialog.Builder(this@MainActivity)
-                        .setTitle("Docker Backend Status")
+                        .setTitle("Backend Server Status")
                         .setMessage("${server.detail}\n\nScamShield Autonomous In-Browser Engine is active to protect your transactions and calls offline.")
                         .setPositiveButton("OK", null)
                         .show()
