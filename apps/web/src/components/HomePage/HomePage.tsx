@@ -172,12 +172,21 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateTab }) => {
                 </button>
 
                 <a
-                  href="./scamshield.apk"
+                  href="/scamshield.apk"
                   download="scamshield.apk"
                   className="px-5 py-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm flex items-center gap-2 cursor-pointer transition-all shadow-md shadow-emerald-600/20 transform hover:-translate-y-0.5"
                 >
                   <Download className="w-4 h-4" />
                   <span>Download Android App</span>
+                </a>
+
+                <a
+                  href="/CogniFlow_AI_Builder_Cup_Submission.pptx"
+                  download="CogniFlow_AI_Builder_Cup_Submission.pptx"
+                  className="px-5 py-3.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm flex items-center gap-2 cursor-pointer transition-all shadow-md shadow-blue-600/20 transform hover:-translate-y-0.5"
+                >
+                  <Download className="w-4 h-4" />
+                  <span>Competition PPTX</span>
                 </a>
               </div>
 

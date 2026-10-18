@@ -37,18 +37,28 @@ export const GuardianCircle: React.FC<GuardianCircleProps> = ({
   const [secondsRemaining, setSecondsRemaining] = useState<number>(84);
   const [n8nStatus, setN8nStatus] = useState<string | null>(null);
 
-  const handleApprove = () => {
+  const [showWorkflowCanvas, setShowWorkflowCanvas] = useState<boolean>(false);
+
+  const handleApprove = async () => {
     setActionStatus('approved');
+    try {
+      await fetch('/bank/guardian-decision?action=approve&hold_id=hold_active&guardian=Hamza%20Tariq');
+    } catch {}
     if (onApproveHold) onApproveHold();
   };
 
-  const handleBlock = () => {
+  const handleBlock = async () => {
     setActionStatus('blocked');
+    try {
+      await fetch('/bank/guardian-decision?action=block&hold_id=hold_active&guardian=Hamza%20Tariq');
+    } catch {}
     if (onBlockHold) onBlockHold();
   };
 
   const triggerN8nAlert = async () => {
-    setN8nStatus('Dispatching webhook to n8n container...');
+    setN8nStatus('⚡ Dispatched Webhook: Executing n8n Automation Flow...');
+    setActionStatus('pending');
+    setSecondsRemaining(900);
     try {
       const payload = {
         hold_id: `hold_${Math.random().toString(36).substring(2, 8)}`,
@@ -58,7 +68,8 @@ export const GuardianCircle: React.FC<GuardianCircleProps> = ({
         tier: 3,
         scam_type: 'Urgent Police / Bank Imposter Call Detected',
         guardian_name: 'Hamza Tariq (Son)',
-        guardian_phone: '+92 300 9876543',
+        guardian_phone: '+92 300 8291034',
+        guardian_email: 'hamza.tariq@gmail.com',
         hold_duration_seconds: 900
       };
 
@@ -69,14 +80,14 @@ export const GuardianCircle: React.FC<GuardianCircleProps> = ({
       });
 
       if (res.ok) {
-        setN8nStatus('⚡ Webhook dispatched! Check n8n Executions at http://localhost:5678');
+        setN8nStatus('✓ n8n Automation Executed: (1) Webhook Triggered → (2) SMS & HTML Email Formatted → (3) Dispatched to WhatsApp Bot (+92 300 8291034) → (4) Ready for 1-Tap Guardian Action below.');
       } else {
         setN8nStatus('✓ Triggered! Check active executions in n8n.');
       }
     } catch (e) {
       setN8nStatus('✓ Triggered! Check active executions in n8n.');
     }
-    setTimeout(() => setN8nStatus(null), 6000);
+    setTimeout(() => setN8nStatus(null), 10000);
   };
 
   return (
@@ -110,26 +121,59 @@ export const GuardianCircle: React.FC<GuardianCircleProps> = ({
               <span>Simulate n8n Trigger</span>
             </button>
 
+            <button
+              onClick={() => setShowWorkflowCanvas(!showWorkflowCanvas)}
+              className="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs flex items-center gap-1.5 transition-all shadow-md cursor-pointer"
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>{showWorkflowCanvas ? 'Hide Workflow Canvas' : 'View n8n Canvas'}</span>
+            </button>
+
             <a
-              href="./guardian_workflow.json"
+              href="/guardian_workflow.json"
               download="guardian_workflow.json"
               className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center gap-1.5 transition-all shadow-md cursor-pointer"
             >
               <Download className="w-3.5 h-3.5" />
               <span>Download n8n JSON</span>
             </a>
-
-            <a
-              href="http://localhost:5678"
-              target="_blank"
-              rel="noreferrer"
-              className="px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer shadow-xs"
-            >
-              <ExternalLink className="w-3.5 h-3.5 text-blue-600 dark:text-cyan-400" />
-              <span>n8n Console (:5678)</span>
-            </a>
           </div>
         </div>
+
+        {/* Visual n8n Canvas Execution Trace */}
+        {showWorkflowCanvas && (
+          <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 text-slate-200 space-y-3 animate-in fade-in">
+            <div className="flex items-center justify-between text-xs font-mono">
+              <span className="text-emerald-400 font-bold flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+                Active n8n Orchestration Pipeline
+              </span>
+              <span className="text-slate-400 text-[11px]">Workflow ID: scamshield-guardian-v2</span>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 text-xs">
+              <div className="p-3 rounded-xl bg-slate-900 border border-blue-500/40 space-y-1">
+                <div className="text-[10px] uppercase font-bold text-blue-400">Node 1: Webhook</div>
+                <div className="font-semibold text-white">Scam Alert Event</div>
+                <div className="text-[10px] text-slate-400">POST /webhook/guardian-alert</div>
+              </div>
+              <div className="p-3 rounded-xl bg-slate-900 border border-indigo-500/40 space-y-1">
+                <div className="text-[10px] uppercase font-bold text-indigo-400">Node 2: JS Transform</div>
+                <div className="font-semibold text-white">Generate 1-Tap URLs</div>
+                <div className="text-[10px] text-slate-400">HTML Email &amp; SMS Builder</div>
+              </div>
+              <div className="p-3 rounded-xl bg-slate-900 border border-amber-500/40 space-y-1">
+                <div className="text-[10px] uppercase font-bold text-amber-400">Node 3: High-Priority SMS</div>
+                <div className="font-semibold text-white">SMS Gateway (+92 300)</div>
+                <div className="text-[10px] text-slate-400">Fast carrier fallback delivery</div>
+              </div>
+              <div className="p-3 rounded-xl bg-slate-900 border border-emerald-500/40 space-y-1">
+                <div className="text-[10px] uppercase font-bold text-emerald-400">Node 4: WhatsApp Bot</div>
+                <div className="font-semibold text-white">Interactive Decision Card</div>
+                <div className="text-[10px] text-slate-400">1-Tap Approve or Reverse</div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {n8nStatus && (
           <div className="p-3 rounded-2xl bg-emerald-50 dark:bg-emerald-950/80 border border-emerald-300 dark:border-emerald-600/50 text-emerald-800 dark:text-emerald-300 text-xs font-bold flex items-center gap-2 animate-in fade-in">

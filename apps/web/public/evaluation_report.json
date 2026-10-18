@@ -1,0 +1,1488 @@
+{
+  "generated_at": "2026-10-14T07:38:07.452546+00:00",
+  "runtime_seconds": 2.6,
+  "engine": "heuristic_fallback",
+  "mode": "full",
+  "dataset": {
+    "seed": 2026,
+    "n_scam_calls": 427,
+    "n_genuine_calls": 349,
+    "scam_by_playbook": {
+      "fake_bank_officer": 61,
+      "wallet_reversal": 61,
+      "prize_offer": 61,
+      "relative_in_trouble": 61,
+      "courier_customs_police": 61,
+      "sim_block": 61,
+      "investment": 61
+    },
+    "scam_by_language": {
+      "ur": 86,
+      "rur": 92,
+      "pa": 72,
+      "en": 84,
+      "mixed": 93
+    },
+    "genuine_by_language": {
+      "ur": 75,
+      "rur": 78,
+      "mixed": 79,
+      "en": 67,
+      "pa": 50
+    },
+    "genuine_by_kind": {
+      "bank_reminder": 58,
+      "delivery": 58,
+      "family_chat": 58,
+      "customer_service": 58,
+      "friend_chat": 58,
+      "urgent_but_real": 58
+    },
+    "n_lens_images": 120,
+    "sources": {
+      "synthetic_template": 768,
+      "curated_pdf": 8
+    },
+    "calls_sha256": "565a7cf023281939af548e10c67375e59d2605485f19fcd9ca3105342a82adbd",
+    "note": "Synthetic-plus-curated corpus (PDF Section 8.1). Scam/genuine scripts are template-composed from ml/evaluation/phrase_bank.py; review and extend with Gemini or recorded calls before claiming real-world accuracy."
+  },
+  "evaluated_calls": {
+    "scam": 427,
+    "genuine": 349
+  },
+  "targets": [
+    {
+      "metric": "recall_at_far",
+      "label": "Recall at fixed false-alarm rate (FAR <= 2%)",
+      "value": 16.159,
+      "goal": ">= 90.0%",
+      "status": "FAIL"
+    },
+    {
+      "metric": "far_at_operating_pt",
+      "label": "False-alarm rate at Tier-2 operating point",
+      "value": 2.006,
+      "goal": "<= 2.0%",
+      "status": "FAIL"
+    },
+    {
+      "metric": "time_to_detect_p50",
+      "label": "Median time-to-detect (first cue -> Tier 2/3)",
+      "value": 18.35,
+      "goal": "< 15.0s",
+      "status": "FAIL"
+    },
+    {
+      "metric": "false_alarms_per_100",
+      "label": "False alarms per 100 genuine calls",
+      "value": 2.006,
+      "goal": "< 3.0",
+      "status": "PASS"
+    },
+    {
+      "metric": "intervention_latency",
+      "label": "Intervention latency (phrase -> warning visible)",
+      "value": 1.6,
+      "goal": "< 3.0s",
+      "status": "PASS"
+    },
+    {
+      "metric": "language_gap",
+      "label": "Worst per-language recall gap vs best language",
+      "value": 32.143,
+      "goal": "<= 10.0pts",
+      "status": "FAIL"
+    },
+    {
+      "metric": "user_comprehension",
+      "label": "Users who understand the warning and act",
+      "value": null,
+      "goal": ">= 8.0/10",
+      "status": "NOT_MEASURED"
+    }
+  ],
+  "detection": {
+    "operating_point_tier2": {
+      "threshold": 60,
+      "recall_pct": 16.39344262295082,
+      "far_pct": 2.005730659025788
+    },
+    "recall_at_far_2pct": {
+      "threshold": 61.0,
+      "recall_pct": 16.159250585480095,
+      "far_pct": 1.7191977077363898
+    },
+    "auc": 0.8444468303550459,
+    "roc": [
+      {
+        "threshold": 0,
+        "tpr": 1.0,
+        "fpr": 1.0
+      },
+      {
+        "threshold": 1,
+        "tpr": 1.0,
+        "fpr": 0.6389684813753582
+      },
+      {
+        "threshold": 2,
+        "tpr": 1.0,
+        "fpr": 0.6389684813753582
+      },
+      {
+        "threshold": 3,
+        "tpr": 1.0,
+        "fpr": 0.6389684813753582
+      },
+      {
+        "threshold": 4,
+        "tpr": 1.0,
+        "fpr": 0.6389684813753582
+      },
+      {
+        "threshold": 5,
+        "tpr": 1.0,
+        "fpr": 0.6389684813753582
+      },
+      {
+        "threshold": 6,
+        "tpr": 1.0,
+        "fpr": 0.6389684813753582
+      },
+      {
+        "threshold": 7,
+        "tpr": 0.990632318501171,
+        "fpr": 0.6389684813753582
+      },
+      {
+        "threshold": 8,
+        "tpr": 0.990632318501171,
+        "fpr": 0.6389684813753582
+      },
+      {
+        "threshold": 9,
+        "tpr": 0.8056206088992974,
+        "fpr": 0.2922636103151863
+      },
+      {
+        "threshold": 10,
+        "tpr": 0.8056206088992974,
+        "fpr": 0.2922636103151863
+      },
+      {
+        "threshold": 11,
+        "tpr": 0.8056206088992974,
+        "fpr": 0.2922636103151863
+      },
+      {
+        "threshold": 12,
+        "tpr": 0.8056206088992974,
+        "fpr": 0.2722063037249284
+      },
+      {
+        "threshold": 13,
+        "tpr": 0.8056206088992974,
+        "fpr": 0.22349570200573066
+      },
+      {
+        "threshold": 14,
+        "tpr": 0.8056206088992974,
+        "fpr": 0.22349570200573066
+      },
+      {
+        "threshold": 15,
+        "tpr": 0.8056206088992974,
+        "fpr": 0.22349570200573066
+      },
+      {
+        "threshold": 16,
+        "tpr": 0.8056206088992974,
+        "fpr": 0.22349570200573066
+      },
+      {
+        "threshold": 17,
+        "tpr": 0.667447306791569,
+        "fpr": 0.22349570200573066
+      },
+      {
+        "threshold": 18,
+        "tpr": 0.667447306791569,
+        "fpr": 0.22349570200573066
+      },
+      {
+        "threshold": 19,
+        "tpr": 0.667447306791569,
+        "fpr": 0.22349570200573066
+      },
+      {
+        "threshold": 20,
+        "tpr": 0.6416861826697893,
+        "fpr": 0.19484240687679083
+      },
+      {
+        "threshold": 21,
+        "tpr": 0.6018735362997658,
+        "fpr": 0.16045845272206305
+      },
+      {
+        "threshold": 22,
+        "tpr": 0.6018735362997658,
+        "fpr": 0.15472779369627507
+      },
+      {
+        "threshold": 23,
+        "tpr": 0.6018735362997658,
+        "fpr": 0.15472779369627507
+      },
+      {
+        "threshold": 24,
+        "tpr": 0.6018735362997658,
+        "fpr": 0.13753581661891118
+      },
+      {
+        "threshold": 25,
+        "tpr": 0.6018735362997658,
+        "fpr": 0.1318051575931232
+      },
+      {
+        "threshold": 26,
+        "tpr": 0.6018735362997658,
+        "fpr": 0.12034383954154727
+      },
+      {
+        "threshold": 27,
+        "tpr": 0.6018735362997658,
+        "fpr": 0.11174785100286533
+      },
+      {
+        "threshold": 28,
+        "tpr": 0.6018735362997658,
+        "fpr": 0.11174785100286533
+      },
+      {
+        "threshold": 29,
+        "tpr": 0.5714285714285714,
+        "fpr": 0.11174785100286533
+      },
+      {
+        "threshold": 30,
+        "tpr": 0.5644028103044496,
+        "fpr": 0.11174785100286533
+      },
+      {
+        "threshold": 31,
+        "tpr": 0.5597189695550351,
+        "fpr": 0.11174785100286533
+      },
+      {
+        "threshold": 32,
+        "tpr": 0.5339578454332553,
+        "fpr": 0.09169054441260745
+      },
+      {
+        "threshold": 33,
+        "tpr": 0.5269320843091335,
+        "fpr": 0.07736389684813753
+      },
+      {
+        "threshold": 34,
+        "tpr": 0.522248243559719,
+        "fpr": 0.06876790830945559
+      },
+      {
+        "threshold": 35,
+        "tpr": 0.5152224824355972,
+        "fpr": 0.04297994269340974
+      },
+      {
+        "threshold": 36,
+        "tpr": 0.5011709601873536,
+        "fpr": 0.04011461318051576
+      },
+      {
+        "threshold": 37,
+        "tpr": 0.4894613583138173,
+        "fpr": 0.03724928366762178
+      },
+      {
+        "threshold": 38,
+        "tpr": 0.46604215456674475,
+        "fpr": 0.034383954154727794
+      },
+      {
+        "threshold": 39,
+        "tpr": 0.44028103044496486,
+        "fpr": 0.034383954154727794
+      },
+      {
+        "threshold": 40,
+        "tpr": 0.3957845433255269,
+        "fpr": 0.034383954154727794
+      },
+      {
+        "threshold": 41,
+        "tpr": 0.36768149882903983,
+        "fpr": 0.034383954154727794
+      },
+      {
+        "threshold": 42,
+        "tpr": 0.3395784543325527,
+        "fpr": 0.02865329512893983
+      },
+      {
+        "threshold": 43,
+        "tpr": 0.3161592505854801,
+        "fpr": 0.02865329512893983
+      },
+      {
+        "threshold": 44,
+        "tpr": 0.30210772833723654,
+        "fpr": 0.02865329512893983
+      },
+      {
+        "threshold": 45,
+        "tpr": 0.28805620608899296,
+        "fpr": 0.02865329512893983
+      },
+      {
+        "threshold": 46,
+        "tpr": 0.27400468384074944,
+        "fpr": 0.025787965616045846
+      },
+      {
+        "threshold": 47,
+        "tpr": 0.2529274004683841,
+        "fpr": 0.025787965616045846
+      },
+      {
+        "threshold": 48,
+        "tpr": 0.23653395784543327,
+        "fpr": 0.025787965616045846
+      },
+      {
+        "threshold": 49,
+        "tpr": 0.2224824355971897,
+        "fpr": 0.025787965616045846
+      },
+      {
+        "threshold": 50,
+        "tpr": 0.2107728337236534,
+        "fpr": 0.025787965616045846
+      },
+      {
+        "threshold": 51,
+        "tpr": 0.2107728337236534,
+        "fpr": 0.025787965616045846
+      },
+      {
+        "threshold": 52,
+        "tpr": 0.19437939110070257,
+        "fpr": 0.025787965616045846
+      },
+      {
+        "threshold": 53,
+        "tpr": 0.1920374707259953,
+        "fpr": 0.025787965616045846
+      },
+      {
+        "threshold": 54,
+        "tpr": 0.1920374707259953,
+        "fpr": 0.025787965616045846
+      },
+      {
+        "threshold": 55,
+        "tpr": 0.1920374707259953,
+        "fpr": 0.025787965616045846
+      },
+      {
+        "threshold": 56,
+        "tpr": 0.18969555035128804,
+        "fpr": 0.025787965616045846
+      },
+      {
+        "threshold": 57,
+        "tpr": 0.17798594847775176,
+        "fpr": 0.025787965616045846
+      },
+      {
+        "threshold": 58,
+        "tpr": 0.17330210772833723,
+        "fpr": 0.02005730659025788
+      },
+      {
+        "threshold": 59,
+        "tpr": 0.17330210772833723,
+        "fpr": 0.02005730659025788
+      },
+      {
+        "threshold": 60,
+        "tpr": 0.16393442622950818,
+        "fpr": 0.02005730659025788
+      },
+      {
+        "threshold": 61,
+        "tpr": 0.16159250585480095,
+        "fpr": 0.017191977077363897
+      },
+      {
+        "threshold": 62,
+        "tpr": 0.16159250585480095,
+        "fpr": 0.017191977077363897
+      },
+      {
+        "threshold": 63,
+        "tpr": 0.16159250585480095,
+        "fpr": 0.017191977077363897
+      },
+      {
+        "threshold": 64,
+        "tpr": 0.15690866510538642,
+        "fpr": 0.017191977077363897
+      },
+      {
+        "threshold": 65,
+        "tpr": 0.15456674473067916,
+        "fpr": 0.017191977077363897
+      },
+      {
+        "threshold": 66,
+        "tpr": 0.15456674473067916,
+        "fpr": 0.017191977077363897
+      },
+      {
+        "threshold": 67,
+        "tpr": 0.15456674473067916,
+        "fpr": 0.0057306590257879654
+      },
+      {
+        "threshold": 68,
+        "tpr": 0.1522248243559719,
+        "fpr": 0.0057306590257879654
+      },
+      {
+        "threshold": 69,
+        "tpr": 0.1522248243559719,
+        "fpr": 0.0057306590257879654
+      },
+      {
+        "threshold": 70,
+        "tpr": 0.14988290398126464,
+        "fpr": 0.0057306590257879654
+      },
+      {
+        "threshold": 71,
+        "tpr": 0.14988290398126464,
+        "fpr": 0.0057306590257879654
+      },
+      {
+        "threshold": 72,
+        "tpr": 0.1451990632318501,
+        "fpr": 0.0057306590257879654
+      },
+      {
+        "threshold": 73,
+        "tpr": 0.1405152224824356,
+        "fpr": 0.0057306590257879654
+      },
+      {
+        "threshold": 74,
+        "tpr": 0.1405152224824356,
+        "fpr": 0.0057306590257879654
+      },
+      {
+        "threshold": 75,
+        "tpr": 0.1358313817330211,
+        "fpr": 0.0057306590257879654
+      },
+      {
+        "threshold": 76,
+        "tpr": 0.13348946135831383,
+        "fpr": 0.0057306590257879654
+      },
+      {
+        "threshold": 77,
+        "tpr": 0.13348946135831383,
+        "fpr": 0.0057306590257879654
+      },
+      {
+        "threshold": 78,
+        "tpr": 0.13114754098360656,
+        "fpr": 0.0057306590257879654
+      },
+      {
+        "threshold": 79,
+        "tpr": 0.1288056206088993,
+        "fpr": 0.0057306590257879654
+      },
+      {
+        "threshold": 80,
+        "tpr": 0.12412177985948478,
+        "fpr": 0.0057306590257879654
+      },
+      {
+        "threshold": 81,
+        "tpr": 0.12412177985948478,
+        "fpr": 0.0057306590257879654
+      },
+      {
+        "threshold": 82,
+        "tpr": 0.12177985948477751,
+        "fpr": 0.0057306590257879654
+      },
+      {
+        "threshold": 83,
+        "tpr": 0.117096018735363,
+        "fpr": 0.0057306590257879654
+      },
+      {
+        "threshold": 84,
+        "tpr": 0.117096018735363,
+        "fpr": 0.0057306590257879654
+      },
+      {
+        "threshold": 85,
+        "tpr": 0.117096018735363,
+        "fpr": 0.0057306590257879654
+      },
+      {
+        "threshold": 86,
+        "tpr": 0.117096018735363,
+        "fpr": 0.0057306590257879654
+      },
+      {
+        "threshold": 87,
+        "tpr": 0.117096018735363,
+        "fpr": 0.0057306590257879654
+      },
+      {
+        "threshold": 88,
+        "tpr": 0.117096018735363,
+        "fpr": 0.0057306590257879654
+      },
+      {
+        "threshold": 89,
+        "tpr": 0.0234192037470726,
+        "fpr": 0.0
+      },
+      {
+        "threshold": 90,
+        "tpr": 0.0234192037470726,
+        "fpr": 0.0
+      },
+      {
+        "threshold": 91,
+        "tpr": 0.0234192037470726,
+        "fpr": 0.0
+      },
+      {
+        "threshold": 92,
+        "tpr": 0.0234192037470726,
+        "fpr": 0.0
+      },
+      {
+        "threshold": 93,
+        "tpr": 0.02107728337236534,
+        "fpr": 0.0
+      },
+      {
+        "threshold": 94,
+        "tpr": 0.01873536299765808,
+        "fpr": 0.0
+      },
+      {
+        "threshold": 95,
+        "tpr": 0.01405152224824356,
+        "fpr": 0.0
+      },
+      {
+        "threshold": 96,
+        "tpr": 0.00468384074941452,
+        "fpr": 0.0
+      },
+      {
+        "threshold": 97,
+        "tpr": 0.00234192037470726,
+        "fpr": 0.0
+      },
+      {
+        "threshold": 98,
+        "tpr": 0.0,
+        "fpr": 0.0
+      },
+      {
+        "threshold": 99,
+        "tpr": 0.0,
+        "fpr": 0.0
+      },
+      {
+        "threshold": 100,
+        "tpr": 0.0,
+        "fpr": 0.0
+      },
+      {
+        "threshold": 101,
+        "tpr": 0.0,
+        "fpr": 0.0
+      }
+    ],
+    "time_to_detect": {
+      "n": 70,
+      "p50": 18.349999999999998,
+      "p90": 33.27,
+      "mean": 20.85285714285714,
+      "max": 37.300000000000004
+    },
+    "false_alarms": 7,
+    "false_alarms_per_100_genuine": 2.005730659025788,
+    "tier_distribution": {
+      "scam": {
+        "tier_0": 186,
+        "tier_1": 171,
+        "tier_2": 20,
+        "tier_3": 50
+      },
+      "genuine": {
+        "tier_0": 310,
+        "tier_1": 32,
+        "tier_2": 5,
+        "tier_3": 2
+      }
+    },
+    "missed_scam_examples": [
+      {
+        "call_id": "scam_0000",
+        "language": "ur",
+        "type": "fake_bank_officer",
+        "max_score": 16
+      },
+      {
+        "call_id": "scam_0001",
+        "language": "rur",
+        "type": "fake_bank_officer",
+        "max_score": 57
+      },
+      {
+        "call_id": "scam_0002",
+        "language": "pa",
+        "type": "fake_bank_officer",
+        "max_score": 16
+      },
+      {
+        "call_id": "scam_0003",
+        "language": "en",
+        "type": "fake_bank_officer",
+        "max_score": 56
+      },
+      {
+        "call_id": "scam_0004",
+        "language": "mixed",
+        "type": "fake_bank_officer",
+        "max_score": 42
+      },
+      {
+        "call_id": "scam_0005",
+        "language": "ur",
+        "type": "fake_bank_officer",
+        "max_score": 8
+      },
+      {
+        "call_id": "scam_0007",
+        "language": "pa",
+        "type": "fake_bank_officer",
+        "max_score": 8
+      },
+      {
+        "call_id": "scam_0009",
+        "language": "mixed",
+        "type": "fake_bank_officer",
+        "max_score": 37
+      },
+      {
+        "call_id": "scam_0010",
+        "language": "ur",
+        "type": "fake_bank_officer",
+        "max_score": 32
+      },
+      {
+        "call_id": "scam_0011",
+        "language": "rur",
+        "type": "fake_bank_officer",
+        "max_score": 59
+      },
+      {
+        "call_id": "scam_0012",
+        "language": "pa",
+        "type": "fake_bank_officer",
+        "max_score": 8
+      },
+      {
+        "call_id": "scam_0014",
+        "language": "mixed",
+        "type": "fake_bank_officer",
+        "max_score": 38
+      },
+      {
+        "call_id": "scam_0015",
+        "language": "ur",
+        "type": "fake_bank_officer",
+        "max_score": 16
+      },
+      {
+        "call_id": "scam_0016",
+        "language": "rur",
+        "type": "fake_bank_officer",
+        "max_score": 43
+      },
+      {
+        "call_id": "scam_0017",
+        "language": "pa",
+        "type": "fake_bank_officer",
+        "max_score": 39
+      }
+    ],
+    "false_alarm_examples": [
+      {
+        "call_id": "genuine_0303",
+        "language": "en",
+        "kind": "urgent_but_real",
+        "max_score": 66
+      },
+      {
+        "call_id": "genuine_0304",
+        "language": "en",
+        "kind": "urgent_but_real",
+        "max_score": 66
+      },
+      {
+        "call_id": "genuine_0313",
+        "language": "en",
+        "kind": "urgent_but_real",
+        "max_score": 66
+      },
+      {
+        "call_id": "genuine_0323",
+        "language": "en",
+        "kind": "urgent_but_real",
+        "max_score": 88
+      },
+      {
+        "call_id": "genuine_0328",
+        "language": "en",
+        "kind": "urgent_but_real",
+        "max_score": 66
+      },
+      {
+        "call_id": "genuine_0338",
+        "language": "en",
+        "kind": "urgent_but_real",
+        "max_score": 60
+      },
+      {
+        "call_id": "genuine_0339",
+        "language": "mixed",
+        "kind": "urgent_but_real",
+        "max_score": 88
+      }
+    ]
+  },
+  "latency": {
+    "measured_compute": {
+      "n": 4999,
+      "p50_ms": 0.01631399993584637,
+      "p95_ms": 0.033754099956695406,
+      "p99_ms": 0.07038381998199811,
+      "max_ms": 12.159128000007513
+    },
+    "unmeasured_stage_budget_s": {
+      "capture_and_chunking": 0.5,
+      "streaming_transcription": 0.6,
+      "action_delivery": 0.5
+    },
+    "projected_end_to_end_s": 1.6000337540999567,
+    "note": "Projected = measured analysis+fusion p95 + PDF 6.2 budget for capture, STT and action delivery."
+  },
+  "fairness": {
+    "per_language": {
+      "en": {
+        "n_scam": 84,
+        "n_genuine": 67,
+        "recall_pct": 32.142857142857146,
+        "far_pct": 8.955223880597014
+      },
+      "mixed": {
+        "n_scam": 93,
+        "n_genuine": 79,
+        "recall_pct": 15.053763440860216,
+        "far_pct": 1.2658227848101267
+      },
+      "pa": {
+        "n_scam": 72,
+        "n_genuine": 50,
+        "recall_pct": 0.0,
+        "far_pct": 0.0
+      },
+      "rur": {
+        "n_scam": 92,
+        "n_genuine": 78,
+        "recall_pct": 31.521739130434785,
+        "far_pct": 0.0
+      },
+      "ur": {
+        "n_scam": 86,
+        "n_genuine": 75,
+        "recall_pct": 0.0,
+        "far_pct": 0.0
+      }
+    },
+    "language_recall_gap_pts": 32.142857142857146,
+    "per_pressure": {
+      "high": {
+        "n_scam": 147,
+        "n_genuine": 0,
+        "recall_pct": 14.965986394557824,
+        "far_pct": null
+      },
+      "low": {
+        "n_scam": 140,
+        "n_genuine": 0,
+        "recall_pct": 17.857142857142858,
+        "far_pct": null
+      },
+      "medium": {
+        "n_scam": 140,
+        "n_genuine": 0,
+        "recall_pct": 16.428571428571427,
+        "far_pct": null
+      },
+      "none": {
+        "n_scam": 0,
+        "n_genuine": 349,
+        "recall_pct": null,
+        "far_pct": 2.005730659025788
+      }
+    },
+    "per_playbook_recall": {
+      "courier_customs_police": {
+        "n": 61,
+        "recall_pct": 0.0
+      },
+      "fake_bank_officer": {
+        "n": 61,
+        "recall_pct": 37.704918032786885
+      },
+      "investment": {
+        "n": 61,
+        "recall_pct": 0.0
+      },
+      "prize_offer": {
+        "n": 61,
+        "recall_pct": 0.0
+      },
+      "relative_in_trouble": {
+        "n": 61,
+        "recall_pct": 31.147540983606557
+      },
+      "sim_block": {
+        "n": 61,
+        "recall_pct": 44.26229508196721
+      },
+      "wallet_reversal": {
+        "n": 61,
+        "recall_pct": 1.639344262295082
+      }
+    },
+    "false_alarm_by_genuine_kind": {
+      "bank_reminder": {
+        "n": 58,
+        "far_pct": 0.0
+      },
+      "customer_service": {
+        "n": 58,
+        "far_pct": 0.0
+      },
+      "delivery": {
+        "n": 58,
+        "far_pct": 0.0
+      },
+      "family_chat": {
+        "n": 58,
+        "far_pct": 0.0
+      },
+      "friend_chat": {
+        "n": 58,
+        "far_pct": 0.0
+      },
+      "urgent_but_real": {
+        "n": 58,
+        "far_pct": 12.068965517241379
+      }
+    }
+  },
+  "understanding": {
+    "scam_type": {
+      "accuracy": 0.14754098360655737,
+      "macro_f1": 0.14326508293334955,
+      "per_class": {
+        "fake_bank_officer": {
+          "precision": 0.3333333333333333,
+          "recall": 0.4918032786885246,
+          "f1": 0.3973509933774834,
+          "support": 61
+        },
+        "wallet_reversal": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "support": 61
+        },
+        "prize_offer": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "support": 61
+        },
+        "relative_in_trouble": {
+          "precision": 0.6875,
+          "recall": 0.5409836065573771,
+          "f1": 0.6055045871559634,
+          "support": 61
+        },
+        "courier_customs_police": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "support": 61
+        },
+        "sim_block": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "support": 61
+        },
+        "investment": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "support": 61
+        },
+        "none": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "support": 0
+        },
+        "uncertain": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "support": 0
+        }
+      },
+      "confusion": {
+        "labels": [
+          "fake_bank_officer",
+          "wallet_reversal",
+          "prize_offer",
+          "relative_in_trouble",
+          "courier_customs_police",
+          "sim_block",
+          "investment",
+          "none",
+          "uncertain"
+        ],
+        "matrix": [
+          [
+            30,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            31,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            15,
+            0,
+            0,
+            0,
+            46,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            61,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            33,
+            0,
+            0,
+            0,
+            28,
+            0
+          ],
+          [
+            28,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            33,
+            0
+          ],
+          [
+            32,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            29,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            61,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        ]
+      },
+      "accuracy_by_language": {
+        "en": 0.2857142857142857,
+        "mixed": 0.16129032258064516,
+        "pa": 0.0,
+        "rur": 0.2608695652173913,
+        "ur": 0.0
+      }
+    },
+    "requested_action": {
+      "accuracy": 0.2459016393442623,
+      "macro_f1": 0.45441309130042573,
+      "per_class": {
+        "share_otp": {
+          "precision": 1.0,
+          "recall": 0.4672131147540984,
+          "f1": 0.6368715083798883,
+          "support": 122
+        },
+        "share_pin": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "support": 0
+        },
+        "send_money": {
+          "precision": 1.0,
+          "recall": 0.15737704918032788,
+          "f1": 0.2719546742209632,
+          "support": 305
+        },
+        "install_app": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "support": 0
+        },
+        "click_link": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "support": 0
+        },
+        "none": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "support": 0
+        },
+        "uncertain": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "support": 0
+        }
+      }
+    },
+    "tactics": {
+      "authority_impersonation": {
+        "precision": 0.6708860759493671,
+        "recall": 0.2324561403508772,
+        "f1": 0.34527687296416937,
+        "tp": 53,
+        "fp": 26,
+        "fn": 175
+      },
+      "urgency_pressure": {
+        "precision": 1.0,
+        "recall": 0.06060606060606061,
+        "f1": 0.1142857142857143,
+        "tp": 24,
+        "fp": 0,
+        "fn": 372
+      },
+      "secrecy_isolation": {
+        "precision": 1.0,
+        "recall": 0.30833333333333335,
+        "f1": 0.4713375796178344,
+        "tp": 37,
+        "fp": 0,
+        "fn": 83
+      },
+      "credential_request": {
+        "precision": 1.0,
+        "recall": 0.48717948717948717,
+        "f1": 0.6551724137931034,
+        "tp": 57,
+        "fp": 0,
+        "fn": 60
+      },
+      "remote_access_request": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "tp": 0,
+        "fp": 0,
+        "fn": 31
+      },
+      "payment_redirection": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "tp": 0,
+        "fp": 0,
+        "fn": 296
+      },
+      "emotional_manipulation": {
+        "precision": 1.0,
+        "recall": 0.39344262295081966,
+        "f1": 0.5647058823529412,
+        "tp": 48,
+        "fp": 0,
+        "fn": 74
+      },
+      "too_good_offer": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "tp": 0,
+        "fp": 0,
+        "fn": 122
+      }
+    },
+    "evidence_phrase_rate": 1.0,
+    "schema_valid_rate": 1.0,
+    "genuine_calls_predicted_scam_type": {
+      "none": 316,
+      "relative_in_trouble": 25,
+      "fake_bank_officer": 8
+    }
+  },
+  "calibration": {
+    "ece": 0.3029252577319587,
+    "brier": 0.27070914948453606,
+    "reliability": [
+      {
+        "bin": "0.0-0.1",
+        "n": 330,
+        "mean_score": 0.04921212121212121,
+        "scam_rate": 0.2515151515151515
+      },
+      {
+        "bin": "0.1-0.2",
+        "n": 104,
+        "mean_score": 0.15615384615384617,
+        "scam_rate": 0.6730769230769231
+      },
+      {
+        "bin": "0.2-0.3",
+        "n": 64,
+        "mean_score": 0.23390624999999998,
+        "scam_rate": 0.546875
+      },
+      {
+        "bin": "0.3-0.4",
+        "n": 97,
+        "mean_score": 0.35195876288659794,
+        "scam_rate": 0.7216494845360825
+      },
+      {
+        "bin": "0.4-0.5",
+        "n": 82,
+        "mean_score": 0.43743902439024396,
+        "scam_rate": 0.9634146341463414
+      },
+      {
+        "bin": "0.5-0.6",
+        "n": 24,
+        "mean_score": 0.5533333333333333,
+        "scam_rate": 0.875
+      },
+      {
+        "bin": "0.6-0.7",
+        "n": 9,
+        "mean_score": 0.6555555555555556,
+        "scam_rate": 0.5555555555555556
+      },
+      {
+        "bin": "0.7-0.8",
+        "n": 11,
+        "mean_score": 0.7472727272727273,
+        "scam_rate": 1.0
+      },
+      {
+        "bin": "0.8-0.9",
+        "n": 45,
+        "mean_score": 0.8757777777777782,
+        "scam_rate": 0.9555555555555556
+      },
+      {
+        "bin": "0.9-1.0",
+        "n": 10,
+        "mean_score": 0.9460000000000001,
+        "scam_rate": 1.0
+      }
+    ]
+  },
+  "fusion_rules": {
+    "total": 18,
+    "passed": 18,
+    "failed": 0,
+    "tests": [
+      {
+        "test": "single signal cannot hard-hold: unknown caller only",
+        "status": "PASS",
+        "detail": "score=6 tier=0",
+        "kind": "design_rule"
+      },
+      {
+        "test": "single signal cannot hard-hold: banking app open only",
+        "status": "PASS",
+        "detail": "score=8 tier=0",
+        "kind": "design_rule"
+      },
+      {
+        "test": "single signal cannot hard-hold: new payee only",
+        "status": "PASS",
+        "detail": "score=10 tier=0",
+        "kind": "design_rule"
+      },
+      {
+        "test": "single signal cannot hard-hold: large amount (9x) only",
+        "status": "PASS",
+        "detail": "score=10 tier=0",
+        "kind": "design_rule"
+      },
+      {
+        "test": "single signal cannot hard-hold: synthetic voice 0.9 only",
+        "status": "PASS",
+        "detail": "score=16 tier=0",
+        "kind": "design_rule"
+      },
+      {
+        "test": "single signal cannot hard-hold: urgency tactic only",
+        "status": "PASS",
+        "detail": "score=13 tier=0",
+        "kind": "design_rule"
+      },
+      {
+        "test": "single signal cannot hard-hold: authority tactic only",
+        "status": "PASS",
+        "detail": "score=15 tier=0",
+        "kind": "design_rule"
+      },
+      {
+        "test": "single signal cannot hard-hold: credential tactic only",
+        "status": "PASS",
+        "detail": "score=27 tier=0",
+        "kind": "design_rule"
+      },
+      {
+        "test": "hard stop: OTP ask + unknown call + banking app open -> Tier 3",
+        "status": "PASS",
+        "detail": "score=88 tier=3",
+        "kind": "design_rule"
+      },
+      {
+        "test": "NOTE hard stop fires with app open but no payee/amount (PDF says 'payment in progress')",
+        "status": "PASS",
+        "detail": "tier=3. Implementation uses banking_app_open as the payment proxy; consider also requiring new_payee or amount_vs_history to match the PDF wording.",
+        "kind": "observation"
+      },
+      {
+        "test": "hard stop does not fire for a known caller",
+        "status": "PASS",
+        "detail": "score=34 tier=1",
+        "kind": "design_rule"
+      },
+      {
+        "test": "official bank number lowers risk (whitelist)",
+        "status": "PASS",
+        "detail": "19 -> 0",
+        "kind": "design_rule"
+      },
+      {
+        "test": "never-fall-quickly smoothing (drop <= 3 per step)",
+        "status": "PASS",
+        "detail": "peak=81 drops=[3, 3, 3, 3, 3]",
+        "kind": "design_rule"
+      },
+      {
+        "test": "tier boundaries 0-29 / 30-59 / 60-84 / 85-100 via fusion engine",
+        "status": "PASS",
+        "detail": "raw 29.4->score 29/tier 0 (want 0); raw 30.0->score 30/tier 1 (want 1); raw 59.4->score 59/tier 1 (want 1); raw 60.0->score 60/tier 2 (want 2); raw 84.0->score 84/tier 2 (want 2); raw 85.0->score 85/tier 3 (want 3)",
+        "kind": "design_rule"
+      },
+      {
+        "test": "safe-word challenge for relative_in_trouble",
+        "status": "PASS",
+        "detail": "",
+        "kind": "design_rule"
+      },
+      {
+        "test": "safe-word challenge for synthetic voice",
+        "status": "PASS",
+        "detail": "",
+        "kind": "design_rule"
+      },
+      {
+        "test": "Tier 3 action ladder contains hold + guardian alert",
+        "status": "PASS",
+        "detail": "['hold_transaction', 'voice_warning_ur', 'notify_guardians', 'dispatch_evidence_pack']",
+        "kind": "design_rule"
+      },
+      {
+        "test": "Tier 0 is silent monitoring only",
+        "status": "PASS",
+        "detail": "['silent_monitoring']",
+        "kind": "design_rule"
+      }
+    ]
+  },
+  "voice_clone": {
+    "data_source": "PROXY_SIGNALS",
+    "n_real": 100,
+    "n_synthetic": 100,
+    "threshold": 0.65,
+    "synthetic_recall": 0.5,
+    "false_flag_rate_on_real": 0.18,
+    "accuracy": 0.66,
+    "auc": 0.6304,
+    "eer": 0.45999999999999996,
+    "per_group": {
+      "female": {
+        "n_synthetic": 25,
+        "n_real": 25,
+        "synthetic_recall": 0.4,
+        "real_false_flag_rate": 0.2
+      },
+      "female_accentB": {
+        "n_synthetic": 25,
+        "n_real": 25,
+        "synthetic_recall": 0.6,
+        "real_false_flag_rate": 0.08
+      },
+      "male": {
+        "n_synthetic": 25,
+        "n_real": 25,
+        "synthetic_recall": 0.48,
+        "real_false_flag_rate": 0.32
+      },
+      "male_accentB": {
+        "n_synthetic": 25,
+        "n_real": 25,
+        "synthetic_recall": 0.52,
+        "real_false_flag_rate": 0.12
+      }
+    },
+    "group_fpr_gap": 0.24,
+    "warning": "Proxy signals were used because data/eval/audio/{real,synthetic}/*.wav were not found. These numbers test the plumbing, NOT real deepfake detection. Add ASVspoof-style or TTS-cloned clips (name files <group>_<anything>.wav) and re-run."
+  },
+  "scam_lens": {
+    "available": true,
+    "engine": "heuristic_fallback",
+    "n_scam": 60,
+    "n_genuine": 60,
+    "scam_recall": 1.0,
+    "false_flag_rate_on_genuine": 1.0,
+    "accuracy": 0.5,
+    "brand_impersonation_accuracy": 0.16666666666666666,
+    "tamper_recall": 1.0,
+    "explanation_rate": 1.0,
+    "latency_ms": {
+      "n": 120,
+      "p50_ms": 0.025955500007057708,
+      "p95_ms": 0.05900240002461032,
+      "p99_ms": 0.10211710004227831,
+      "max_ms": 0.22365299992088694
+    },
+    "verdict_counts": {
+      "safe": 0,
+      "suspicious": 0,
+      "scam": 120
+    },
+    "warning": "The offline fallback returns the same 'scam' verdict for every image, so the false-flag rate is 100%. Set GEMINI_API_KEY to evaluate the real vision model."
+  },
+  "prompt_injection": {
+    "n": 120,
+    "recall_without_injection": 0.19166666666666668,
+    "recall_with_injection": 0.19166666666666668,
+    "verdicts_flipped_by_injection": 0,
+    "flip_rate": 0.0,
+    "pass": true
+  },
+  "user_comprehension": {
+    "n_testers": 0,
+    "n_passed": 0,
+    "pass_rate": null,
+    "score_out_of_10": null,
+    "enough_testers": false,
+    "responses": [],
+    "note": "Collect at least 10 testers before reporting this metric."
+  },
+  "asr_quality": null
+}

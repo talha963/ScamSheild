@@ -267,13 +267,24 @@ export const Header: React.FC<HeaderProps> = ({
 
             {/* Download Android APK Button */}
             <a
-              href="./scamshield.apk"
+              href="/scamshield.apk"
               download="scamshield.apk"
               title="Download ScamShield Android APK"
               className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20 text-xs font-bold transition-all shadow-xs"
             >
               <Download className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
               <span>Get APK</span>
+            </a>
+
+            {/* Download Competition Presentation PPTX */}
+            <a
+              href="/CogniFlow_AI_Builder_Cup_Submission.pptx"
+              download="CogniFlow_AI_Builder_Cup_Submission.pptx"
+              title="Download Google Cloud AI Builder Cup PPTX"
+              className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-blue-500/10 hover:bg-blue-500/20 text-blue-700 dark:text-blue-300 border border-blue-500/20 text-xs font-bold transition-all shadow-xs"
+            >
+              <Download className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+              <span>PPTX Slide Deck</span>
             </a>
 
             {/* Launch Simulator Primary Button */}
