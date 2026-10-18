@@ -25,7 +25,7 @@ FROM python:3.11-slim
 # Prevent python from buffering stdout/stderr and writing bytecode
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONDONTWRITEBYTECODE=1
-ENV PORT=8000
+ENV PORT=8080
 ENV HOST=0.0.0.0
 
 WORKDIR /app
@@ -45,9 +45,11 @@ COPY . /app
 
 # Copy compiled frontend assets from Stage 1 into apps/web/dist
 COPY --from=frontend-builder /build/dist /app/apps/web/dist
+COPY scamshield.apk /app/apps/web/dist/scamshield.apk
+COPY CogniFlow_AI_Builder_Cup_Submission.pptx /app/apps/web/dist/CogniFlow_AI_Builder_Cup_Submission.pptx
 
 # Expose the unified application port
-EXPOSE 8000
+EXPOSE 8080
 
 # Healthcheck for container orchestrators (Cloud Run / Docker)
 HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \

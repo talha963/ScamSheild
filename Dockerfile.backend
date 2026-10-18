@@ -1,12 +1,21 @@
 # ==============================================================================
-# ScamShield - Backend Service Container (FastAPI + WebSockets + AI Engines)
+# ScamShield - Production Unified Full-Stack Container for Google Cloud Run
+# Builds React Frontend + FastAPI Backend in a Single Cloud Run Service
 # ==============================================================================
 
-FROM python:3.11-slim
+# Stage 1: Build the React 19 Frontend Web PWA
+FROM node:20-alpine AS frontend-builder
+WORKDIR /web
+COPY apps/web/package*.json ./
+RUN npm ci
+COPY apps/web/ ./
+RUN npm run build
 
+# Stage 2: Production Python Backend + Static UI
+FROM python:3.11-slim
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
-    PORT=8000 \
+    PORT=8080 \
     HOST=0.0.0.0
 
 WORKDIR /app
@@ -29,10 +38,18 @@ COPY infra/ ./infra/
 COPY reports/ ./reports/
 COPY data/ ./data/
 COPY run_system.py ./
+COPY scamshield.apk ./
 
-EXPOSE 8000
+# Copy built frontend from Stage 1 into /app/apps/web/dist
+COPY --from=frontend-builder /web/dist ./apps/web/dist
+
+# Ensure scamshield.apk & PPTX are inside dist for direct download
+COPY scamshield.apk ./apps/web/dist/scamshield.apk
+COPY CogniFlow_AI_Builder_Cup_Submission.pptx ./apps/web/dist/CogniFlow_AI_Builder_Cup_Submission.pptx
+
+EXPOSE 8080
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
-  CMD curl -f http://localhost:8000/health || exit 1
+  CMD curl -f http://localhost:8080/health || exit 1
 
 CMD ["python", "run_system.py"]
