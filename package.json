@@ -1,0 +1,28 @@
+{
+  "name": "scamshield-live",
+  "version": "1.0.0",
+  "description": "--- title: ScamShield Live emoji: 🛡️ colorFrom: indigo colorTo: blue sdk: docker app_port: 7860 pinned: false license: mit ---",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs",
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/talha963/ScamSheild.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/talha963/ScamSheild/issues"
+  },
+  "homepage": "https://github.com/talha963/ScamSheild#readme",
+  "dependencies": {
+    "nodemailer": "^10.1.3"
+  }
+}

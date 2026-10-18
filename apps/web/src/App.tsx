@@ -52,6 +52,34 @@ export function App() {
     setTheme((prev) => (prev === 'light' ? 'dark' : 'light'));
   };
 
+  const [emailActionNotice, setEmailActionNotice] = useState<string | null>(null);
+
+  // Catch 1-Tap Decision links from Gmail (e.g. ?action=reverse&hold_id=TXN-1234)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    const action = params.get('action');
+    const holdId = params.get('hold_id');
+
+    if (action && (action === 'reverse' || action === 'block' || action === 'approve')) {
+      setActiveTab('mock-bank');
+      fetch(`/bank/guardian-decision?action=${action}&hold_id=${encodeURIComponent(holdId || 'active')}`)
+        .then((res) => res.json())
+        .then(() => {
+          if (action === 'reverse' || action === 'block') {
+            setEmailActionNotice(
+              `🛑 1-Tap Guardian Reversal Confirmed via Email! Hold ${holdId || ''} permanently cancelled and PKR 85,000 refunded to account balance.`
+            );
+          } else {
+            setEmailActionNotice(
+              `✅ 1-Tap Guardian Approval Confirmed via Email! Hold ${holdId || ''} authorized and released.`
+            );
+          }
+        })
+        .catch(() => {});
+    }
+  }, []);
+
   const handleTriggerBankHold = (amount: number, reason: string) => {
     setIsHoldActive(true);
     setHeldAmount(amount);
@@ -75,6 +103,23 @@ export function App() {
         theme={theme}
         toggleTheme={toggleTheme}
       />
+
+      {/* 1-Tap Email Action Global Alert Banner */}
+      {emailActionNotice && (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4 w-full">
+          <div className="p-4 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-700 text-white flex items-center justify-between shadow-xl animate-in slide-in-from-top duration-300">
+            <span className="text-xs sm:text-sm font-black tracking-wide">
+              {emailActionNotice}
+            </span>
+            <button
+              onClick={() => setEmailActionNotice(null)}
+              className="px-3 py-1 rounded-xl bg-white/20 hover:bg-white/30 text-white font-bold text-xs cursor-pointer ml-3 shrink-0"
+            >
+              Dismiss
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Main View Area */}
       <main className="flex-1 w-full pt-4">

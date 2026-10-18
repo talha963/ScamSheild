@@ -310,6 +310,32 @@ export async function handleMockApiRequest(
 
     localStorage.setItem('scamshield_active_hold', JSON.stringify(holdObj));
 
+    // Dispatch real email via /api/send-email if gateway configured
+    try {
+      const cfgStr = localStorage.getItem('scamshield_gateway_config');
+      if (cfgStr) {
+        const cfg = JSON.parse(cfgStr);
+        if (cfg.smtp_password && (cfg.smtp_user || guardianEmail)) {
+          fetch('/api/send-email', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              smtp_host: cfg.smtp_host || 'smtp.gmail.com',
+              smtp_port: cfg.smtp_port || 587,
+              smtp_user: cfg.smtp_user || guardianEmail,
+              smtp_password: cfg.smtp_password,
+              to: guardianEmail || cfg.smtp_user,
+              hold_id: holdId,
+              amount: amount,
+              payee_name: payeeName,
+              payee_account: payeeAccount,
+              guardian_name: guardianName,
+            }),
+          }).catch(() => {});
+        }
+      }
+    } catch {}
+
     // Store n8n automation dispatch record in localStorage
     const n8nLog = {
       execution_id: `exec_${Date.now()}`,
@@ -426,12 +452,34 @@ export async function handleMockApiRequest(
 
   // 7. Test Email & SMS Gateway
   if (path === '/bank/notifications/test-email' && method === 'POST') {
-    const target = body.recipient_email || body.email || localStorage.getItem('scamshield_guardian_email') || 'hamza.tariq@gmail.com';
+    const target = body.recipient_email || body.email || body.to || localStorage.getItem('scamshield_guardian_email') || 'hamza.tariq@gmail.com';
+    const pass = (body.smtp_password || '').trim();
+
+    if (pass) {
+      try {
+        const res = await fetch('/api/send-email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        });
+        const apiData = await res.json();
+        return {
+          status: 200,
+          data: apiData,
+        };
+      } catch (e: any) {
+        return {
+          status: 200,
+          data: { success: false, error: e.message || 'SMTP dispatch failed' },
+        };
+      }
+    }
+
     return {
       status: 200,
       data: {
         success: true,
-        message: `✓ Simulated Guardian Alert Email dispatched successfully to ${target} with 1-Tap Reverse & Approve buttons!`,
+        message: `✓ Simulated Guardian Alert Email dispatched successfully to ${target} with 1-Tap Reverse & Approve buttons! (Enter Google App Password to deliver live to inbox)`,
       },
     };
   }

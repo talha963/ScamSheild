@@ -329,16 +329,32 @@ export const MockBank: React.FC<MockBankProps> = ({
       const cleanPassword = (gatewayConfig.smtp_password || '').trim().replace(/\s+/g, '');
       const cleanUser = (gatewayConfig.smtp_user || guardianEmail).trim();
       const targetEmail = (gatewayConfig.smtp_user || guardianEmail).trim();
+
+      if (!cleanPassword) {
+        setTestEmailStatus({
+          loading: false,
+          success: false,
+          message: '⚠️ Please enter your 16-character Google App Password in the field below to dispatch real emails to your Gmail inbox.',
+        });
+        return;
+      }
+
       const payload = {
         ...gatewayConfig,
         smtp_host: gatewayConfig.smtp_host || 'smtp.gmail.com',
         smtp_port: gatewayConfig.smtp_port || 587,
         smtp_user: cleanUser,
         smtp_password: cleanPassword,
-        email: targetEmail,
+        to: targetEmail,
+        subject: `🚨 ScamShield Live Email Gateway Test (Delivered to ${targetEmail})`,
+        holdId: `TEST-${Math.floor(1000 + Math.random() * 9000)}`,
+        amount: 85000,
+        payee_name: 'Ali Raza (Unverified Account)',
+        payee_account: 'PK44MBL00098472910',
+        guardian_name: guardianName || 'Hamza Tariq (Son)',
       };
 
-      const res = await fetch('/bank/notifications/test-email', {
+      const res = await fetch('/api/send-email', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -348,25 +364,31 @@ export const MockBank: React.FC<MockBankProps> = ({
         setGatewayConfig((prev) => ({
           ...prev,
           smtp_user: cleanUser,
+          smtp_password: cleanPassword,
           smtp_password_configured: true,
         }));
         if (typeof window !== 'undefined') {
           localStorage.setItem('scamshield_gateway_config', JSON.stringify({
             ...gatewayConfig,
             smtp_user: cleanUser,
+            smtp_password: cleanPassword,
             smtp_password_configured: true,
           }));
         }
+        setTestEmailStatus({
+          loading: false,
+          success: true,
+          message: `✓ Real alert email delivered to ${targetEmail}! Check your Gmail inbox now (also check spam if sender is new).`,
+        });
+      } else {
+        setTestEmailStatus({
+          loading: false,
+          success: false,
+          message: `⚠️ ${data.error || data.message || 'Failed to deliver via SMTP'}`,
+        });
       }
-      setTestEmailStatus({
-        loading: false,
-        success: data.success,
-        message: data.success
-          ? `✓ Rich HTML alert delivered to ${targetEmail}! Check your inbox now.`
-          : `⚠️ ${data.message || data.error || 'Failed to deliver'}`,
-      });
     } catch (err: any) {
-      setTestEmailStatus({ loading: false, success: false, message: err.message });
+      setTestEmailStatus({ loading: false, success: false, message: `Network error: ${err.message}` });
     }
   };
 
@@ -526,6 +548,50 @@ export const MockBank: React.FC<MockBankProps> = ({
           }
         })
         .catch(() => {});
+
+      // Dispatch real alert email to guardian via Vercel serverless function
+      const savedCfgStr = typeof window !== 'undefined' ? localStorage.getItem('scamshield_gateway_config') : null;
+      let effectivePass = (gatewayConfig.smtp_password || '').trim().replace(/\s+/g, '');
+      let effectiveUser = (gatewayConfig.smtp_user || guardianEmail).trim();
+      let effectiveHost = gatewayConfig.smtp_host || 'smtp.gmail.com';
+      let effectivePort = gatewayConfig.smtp_port || 587;
+
+      if (!effectivePass && savedCfgStr) {
+        try {
+          const parsed = JSON.parse(savedCfgStr);
+          if (parsed.smtp_password) effectivePass = parsed.smtp_password.trim().replace(/\s+/g, '');
+          if (parsed.smtp_user) effectiveUser = parsed.smtp_user.trim();
+          if (parsed.smtp_host) effectiveHost = parsed.smtp_host;
+          if (parsed.smtp_port) effectivePort = parsed.smtp_port;
+        } catch {}
+      }
+
+      if (effectivePass && effectiveUser) {
+        fetch('/api/send-email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            smtp_host: effectiveHost,
+            smtp_port: effectivePort,
+            smtp_user: effectiveUser,
+            smtp_password: effectivePass,
+            to: guardianEmail || effectiveUser,
+            hold_id: txnId,
+            amount: numAmount,
+            payee_name: recipientDetails.name,
+            payee_account: recipientDetails.account,
+            guardian_name: guardianName,
+          }),
+        })
+          .then((res) => res.json())
+          .then((data) => {
+            if (data.success) {
+              setGuardianNotified(true);
+              setSavedNotification(`🛡️ Real Emergency Alert Email DISPATCHED to ${guardianEmail || effectiveUser}! Tap 1-Click Reverse in Gmail to refund.`);
+            }
+          })
+          .catch(() => {});
+      }
     } else {
       // Normal safe transfer (No scam call detected)
       setBalance((prev) => Math.max(0, prev - numAmount));
@@ -1498,6 +1564,14 @@ export const MockBank: React.FC<MockBankProps> = ({
                     placeholder={gatewayConfig.smtp_password_configured ? '•••••••••••••••• (Saved)' : '16-character app password'}
                     className="w-full text-xs bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-900 dark:text-white font-mono"
                   />
+                  <a
+                    href="https://myaccount.google.com/apppasswords"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[10px] text-blue-600 dark:text-blue-400 hover:underline inline-flex items-center gap-1 mt-1 font-semibold"
+                  >
+                    <span>Generate 16-Character App Password ↗</span>
+                  </a>
                 </div>
               </div>
             </div>
