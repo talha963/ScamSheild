@@ -25,7 +25,7 @@ FROM python:3.11-slim
 # Prevent python from buffering stdout/stderr and writing bytecode
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONDONTWRITEBYTECODE=1
-ENV PORT=8080
+ENV PORT=7860
 ENV HOST=0.0.0.0
 
 WORKDIR /app
@@ -48,12 +48,16 @@ COPY --from=frontend-builder /build/dist /app/apps/web/dist
 COPY scamshield.apk /app/apps/web/dist/scamshield.apk
 COPY CogniFlow_AI_Builder_Cup_Submission.pptx /app/apps/web/dist/CogniFlow_AI_Builder_Cup_Submission.pptx
 
-# Expose the unified application port
-EXPOSE 8080
+# Create non-root user for Hugging Face Spaces / secure cloud runners
+RUN useradd -m -u 1000 user && chown -R user:user /app
+USER user
 
-# Healthcheck for container orchestrators (Cloud Run / Docker)
+# Expose the application port
+EXPOSE 7860
+
+# Healthcheck for container orchestrators (Hugging Face / Cloud Run / Docker)
 HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
-  CMD curl -f http://localhost:8000/health || exit 1
+  CMD curl -f http://localhost:7860/health || exit 1
 
 # Launch the unified ScamShield Live service
 CMD ["python", "run_system.py"]
